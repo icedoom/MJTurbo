@@ -1,37 +1,45 @@
 <script lang="ts">
-import { EditorView, basicSetup} from 'codemirror'
+import { EditorView, basicSetup } from 'codemirror'
+import { EditorState } from "@codemirror/state"
 import { keymap } from "@codemirror/view"
-import {defaultKeymap} from "@codemirror/commands"
-import { json} from "@codemirror/lang-json"
+import { defaultKeymap } from "@codemirror/commands"
+import { json } from "@codemirror/lang-json"
 import { defineComponent } from "vue";
 
 class EditorHolder {
-  e?: EditorView;
-  init = (ref: any) => {
-    console.log(ref)
-    this.e = new EditorView({
-        doc: "[1,2, {a:12}]\n",
-        parent: ref,
-        extensions: [basicSetup, json(), keymap.of(defaultKeymap)],
-    })    
-    console.log('JsonEditor Create.', ref)
-  }
-  destroy = () => {
-    this.e?.destroy()
-    this.e = void(0)
-  }
+    e?: EditorView;
+    init = (ref: any) => {
+        console.log(ref)
+
+        let startState = EditorState.create({
+            doc: "[1,2, {a:12}]\n",
+            extensions: [basicSetup, json(), keymap.of(defaultKeymap)]
+        })
+
+
+        console.log(startState)
+        this.e = new EditorView({
+            parent: ref,
+            state: startState
+        })
+        console.log('JsonEditor Create.', ref)
+    }
+    destroy = () => {
+        this.e?.destroy()
+        this.e = void (0)
+    }
 }
 
 
 export default defineComponent({
     name: "MJEditor",
-    data () {
+    data() {
         return {
             editorHolder: new EditorHolder()
         }
 
     },
-    mounted () {
+    mounted() {
         this.editorHolder.init(this.$refs['editor'])
     },
     beforeUnmount() {
@@ -46,7 +54,5 @@ export default defineComponent({
 </script>
 
 <template>
-    <div class="mjeditor-container">
-        <div ref="editor"></div>
-    </div>
+    <div ref="editor"></div>
 </template>
