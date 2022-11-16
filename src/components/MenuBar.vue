@@ -4,6 +4,7 @@ import IconMJTurbo from "./icons/IconMJTurbo.vue";
 import IconCodeFormat from "./icons/IconCodeFormat.vue";
 
 export default defineComponent({
+  components: { IconMJTurbo, IconCodeFormat },
     name: 'MenuBar'
 })
 </script>
@@ -62,8 +63,8 @@ export default defineComponent({
     }
     
     &:active {
-      background-color: red;
-      transition: all 0.2s ease-in;
+      background-color: rgba(255, 255, 255, 1);;
+      transition: all 0.3s ease-in;
     }
   }
 }
