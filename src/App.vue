@@ -1,20 +1,16 @@
 <script setup lang="ts">
 import MJEditorVue from './components/MJEditor.vue';
+import MenuBar from './components/MenuBar.vue';
 </script>
 
 <template>
-  <div class="menu-bar"></div>
+  <MenuBar/>
   <div class="editor-con">
     <MJEditorVue class="meditor" />
   </div>
 </template>
 
 <style scoped lang="scss">
-.menu-bar {
-  height: 60px;
-  width: 100%;
-  background-color: blue;
-}
 
 .editor-con {
   width: 100%;
