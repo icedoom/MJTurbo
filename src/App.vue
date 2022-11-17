@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import MJEditorVue from './components/MJEditor.vue';
+import MJEditor from './components/MJEditor.vue';
 import MenuBar from './components/MenuBar.vue';
 </script>
 
 <template>
   <MenuBar/>
   <div class="editor-con">
-    <MJEditorVue class="meditor" />
+    <MJEditor class="meditor" />
   </div>
 </template>
 

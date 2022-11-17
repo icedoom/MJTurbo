@@ -2,20 +2,28 @@
 import { defineComponent } from "vue";
 import IconMJTurbo from "./icons/IconMJTurbo.vue";
 import IconCodeFormat from "./icons/IconCodeFormat.vue";
+import { editorBridge } from "@/stores/editorBridge";
+import {mapActions } from 'pinia'
+
 
 export default defineComponent({
   components: { IconMJTurbo, IconCodeFormat },
-    name: 'MenuBar'
+  name: 'MenuBar',
+
+
+  methods: {
+    ...mapActions(editorBridge, ['codeFormat']),
+  },
 })
 </script>
 
 <template>
     <div class="menu-bar">
         <div class="mj-logo">
-            <IconMJTurbo />
+            <img src="@/assets/MJTurbo.png">
         </div>
         <div class="mj-menu-group">
-            <button class="mj-menu-btn">
+            <button class="mj-menu-btn" @click="codeFormat">
                 <IconCodeFormat />
             </button>
         </div>
@@ -34,6 +42,9 @@ export default defineComponent({
 
   .mj-logo {
     margin: 0 8px 0 8px;
+    img {
+      height: 50px;
+    }
   }
 
   .mj-menu-group {

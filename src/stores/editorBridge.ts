@@ -9,6 +9,9 @@ export const editorBridge = defineStore('editorBridge', {
         isAllModeOn: (state) => state.textMode && state.treeMode
     },
     actions: {
+        codeFormat() {
+            console.log("code format call")
+        },
         toggleTextMode() {
             this.textMode = !this.textMode
         },
