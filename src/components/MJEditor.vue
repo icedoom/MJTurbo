@@ -2,32 +2,39 @@
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState } from "@codemirror/state"
 import { keymap } from "@codemirror/view"
+import {linter, lintGutter, type Diagnostic, type LintSource} from "@codemirror/lint"
+import {syntaxTree} from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
-import { json } from "@codemirror/lang-json"
+import { json , jsonParseLinter} from "@codemirror/lang-json"
 import { defineComponent } from "vue";
 import { editorBridge } from '@/stores/editorBridge'
 
 class EditorHolder {
-    e?: EditorView;
+    view?: EditorView;
     init = (ref: any) => {
-        console.log(ref)
+        const jLinter = jsonParseLinter()
+        const myLinter:LintSource = (view: EditorView) => {
+            const ds = jLinter(view)
+            for (const d of ds) {
+                console.log(d)
+            }
+            return ds
+        }
 
-        let startState = EditorState.create({
+        let state = EditorState.create({
             doc: "[1,2, {a:12}]\n",
-            extensions: [basicSetup, json(), keymap.of(defaultKeymap)]
+            extensions: [basicSetup, json(), linter(myLinter), lintGutter(), keymap.of(defaultKeymap)]
         })
 
-
-        console.log(startState)
-        this.e = new EditorView({
+        this.view = new EditorView({
             parent: ref,
-            state: startState
+            state: state
         })
         console.log('JsonEditor Create.', ref)
     }
     destroy = () => {
-        this.e?.destroy()
-        this.e = void (0)
+        this.view?.destroy()
+        this.view = void (0)
     }
 }
 
@@ -71,7 +78,7 @@ export default defineComponent({
     methods: {
         codeFormat() {
             console.log("now format")
-            console.log(this.editorHolder.e?.state)
+            console.log(this.editorHolder.view?.state)
         }
     },
 })
