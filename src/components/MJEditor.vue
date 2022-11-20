@@ -8,6 +8,14 @@ import { defaultKeymap } from "@codemirror/commands"
 import { json , jsonParseLinter} from "@codemirror/lang-json"
 import { defineComponent } from "vue";
 import { editorBridge } from '@/stores/editorBridge'
+import type { TreeCursor } from '@lezer/common'
+
+
+const _codeFormat = (c:TreeCursor, indent:number) => {
+    
+}
+
+
 
 class EditorHolder {
     view?: EditorView;
@@ -22,7 +30,7 @@ class EditorHolder {
         }
 
         let state = EditorState.create({
-            doc: "[1,2, {a:12}]\n",
+            doc: '[1,{"m2":3, m3:4 }, {"a":12}]\n',
             extensions: [basicSetup, json(), linter(myLinter), lintGutter(), keymap.of(defaultKeymap)]
         })
 
@@ -35,6 +43,31 @@ class EditorHolder {
     destroy = () => {
         this.view?.destroy()
         this.view = void (0)
+    }
+
+    getDoc() {
+        return this.view ? this.view.state.doc : null
+    }
+
+    codeFormat() {
+        if (this.view === undefined) {
+            return
+        } 
+
+        let c = syntaxTree(this.view.state).cursor()
+        if (c.name !== 'JsonText' || !c.firstChild()) {
+            return 
+        }
+
+        let res:string[] = []
+        let unit = 0
+
+
+
+        syntaxTree(this.view.state).cursor().iterate(node => {
+            console.log(node.name)
+            console.log(node.type)
+        })
     }
 }
 
@@ -78,6 +111,8 @@ export default defineComponent({
     methods: {
         codeFormat() {
             console.log("now format")
+            const doc = this.editorHolder.getDoc()
+            
             console.log(this.editorHolder.view?.state)
         }
     },
