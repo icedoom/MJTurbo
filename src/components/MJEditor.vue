@@ -9,10 +9,11 @@ import { json , jsonParseLinter} from "@codemirror/lang-json"
 import { defineComponent } from "vue";
 import { editorBridge } from '@/stores/editorBridge'
 import type { TreeCursor } from '@lezer/common'
+import { JsonFormater } from '@/utils/jsonUtil'
 
 
 const _codeFormat = (c:TreeCursor, indent:number) => {
-    
+
 }
 
 
@@ -55,19 +56,18 @@ class EditorHolder {
         } 
 
         let c = syntaxTree(this.view.state).cursor()
-        if (c.name !== 'JsonText' || !c.firstChild()) {
+        if (c.name !== 'JsonText') {
             return 
         }
 
-        let res:string[] = []
-        let unit = 0
+        const formater = new JsonFormater(this.view.state)
+        const res = formater.toStyledString()
+        if (!res) {
+            return
+        }
+        console.log(res)
+        this.view.dispatch({changes: {from: 0, to: this.view.state.doc.length, insert: res }})
 
-
-
-        syntaxTree(this.view.state).cursor().iterate(node => {
-            console.log(node.name)
-            console.log(node.type)
-        })
     }
 }
 
@@ -111,9 +111,7 @@ export default defineComponent({
     methods: {
         codeFormat() {
             console.log("now format")
-            const doc = this.editorHolder.getDoc()
-            
-            console.log(this.editorHolder.view?.state)
+            this.editorHolder.codeFormat() 
         }
     },
 })
