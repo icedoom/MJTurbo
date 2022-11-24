@@ -2,20 +2,13 @@
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState } from "@codemirror/state"
 import { keymap } from "@codemirror/view"
-import {linter, lintGutter, type Diagnostic, type LintSource} from "@codemirror/lint"
+import {diagnosticCount, linter, lintGutter, nextDiagnostic, openLintPanel, type Diagnostic, type LintSource} from "@codemirror/lint"
 import {syntaxTree} from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
 import { json , jsonParseLinter} from "@codemirror/lang-json"
 import { defineComponent } from "vue";
 import { editorBridge } from '@/stores/editorBridge'
-import type { TreeCursor } from '@lezer/common'
 import { JsonFormater } from '@/utils/jsonUtil'
-
-
-const _codeFormat = (c:TreeCursor, indent:number) => {
-
-}
-
 
 
 class EditorHolder {
@@ -29,10 +22,17 @@ class EditorHolder {
             }
             return ds
         }
+        let theme = EditorView.theme({
+            '.cm-panel.cm-panel-lint ul [aria-selected]': { backgroundColor: '#fcb2b2' },
+            '.cm-lintPoint:after': {
+                border: '2px solid red',
+                position: 'inherit'
+            }
+        })
 
         let state = EditorState.create({
             doc: '[1,{"m2":3, m3:4 }, {"a":12}]\n',
-            extensions: [basicSetup, json(), linter(myLinter), lintGutter(), keymap.of(defaultKeymap)]
+            extensions: [basicSetup, json(), linter(myLinter), lintGutter(), keymap.of(defaultKeymap), theme]
         })
 
         this.view = new EditorView({
@@ -54,6 +54,13 @@ class EditorHolder {
         if (this.view === undefined) {
             return
         } 
+        const dCount = diagnosticCount(this.view.state)
+        if (dCount > 0) {
+            openLintPanel(this.view)
+            nextDiagnostic(this.view)
+            console.log('can not format code due to invalid json data')
+            return
+        }
 
         let c = syntaxTree(this.view.state).cursor()
         if (c.name !== 'JsonText') {
