@@ -31,7 +31,7 @@ class EditorHolder {
         })
 
         let state = EditorState.create({
-            doc: '[1,{"m2":3, m3:4 }, {"a":12}]\n',
+            doc: '{"a":12}\n',
             extensions: [basicSetup, json(), linter(myLinter), lintGutter(), keymap.of(defaultKeymap), theme]
         })
 

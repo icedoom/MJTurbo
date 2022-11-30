@@ -1,86 +1,199 @@
-import type { EditorState } from '@codemirror/state'
+import type { EditorState, Text } from '@codemirror/state'
 import {syntaxTree} from "@codemirror/language"
 import type { TreeCursor } from '@lezer/common'
 
-const clone = (c: TreeCursor) => {
-    return c.node.cursor()
+function clone(cursor: TreeCursor) {
+    return cursor.node.cursor()
 }
-class SpaceIndent {
-    state: EditorState
-    constructor(state:EditorState) {
-        this.state = state
+class DocTyper {
+    readonly doc: Text;
+    buffer:string[] = []
+    row = ""
+    warpper = ""
+    constructor(doc: Text) {
+        this.doc = doc
     }
 
-    deco(c:TreeCursor, comma?:boolean): string {
-        return comma? `${this.str(c)},` : this.str(c)
+    str(c: TreeCursor) {
+        return this.doc.sliceString(c.from, c.to)
     }
 
-    str(c: TreeCursor): string {
-        return this.state.doc.sliceString(c.from, c.to)
+    append(val: string): DocTyper {
+        this.row += val
+        return this
     }
 
-    stepIn() { }
-    stepOut() { }
-} 
+    endl(): DocTyper {
+        this.buffer.push(this.row)
+        this.row = ""
+        return this
+    }
 
-class StyledIndent extends SpaceIndent {
-    private level: number = 0
-    deco(c:TreeCursor, comma?:boolean): string {
-        const val = `${"  ".repeat(this.level)}${this.str(c)}`
-        return comma ? val + ',' : val
+    flush() {
+        if (this.row.length > 0) {
+            this.buffer.push(this.row)
+        }
+        const res = this.buffer.join(this.warpper)
+        this.buffer = []
+        return res
     }
-    stepIn(): void {
-        this.level += 1
+
+    childBegin() { return this }
+
+    childEnd() { return this }
+}
+
+class StyledDocTyper extends DocTyper {
+    static INDENT = '  '
+
+    level = 0
+    constructor(doc: Text) {
+        super(doc)
+        this.warpper = '\n'
     }
-    stepOut(): void {
+
+    append(val: string): DocTyper {
+        if (this.row.length === 0 && this.level > 0) {
+            this.row = StyledDocTyper.INDENT.repeat(this.level)
+        }
+        return super.append(val)
+    }
+
+    childBegin(): this {
+       this.level += 1 
+       return this
+    }
+
+    childEnd(): this {
         this.level -= 1
+        return this
     }
 }
 
-interface Serilizer {
-    (c:TreeCursor, indenter:SpaceIndent, seq:string[], comma?:boolean):boolean
+abstract class ItemStreamer {
+    abstract stream(cursor:TreeCursor, typer:DocTyper): boolean
 }
 
-let BaseSerilizer = (c: TreeCursor, indenter: SpaceIndent, seq: string[], comma?:boolean): boolean => { 
-    seq.push(indenter.deco(c, comma))
-    return true
+class BaseStreamer extends ItemStreamer {
+    
+    stream(cursor: TreeCursor, typer: DocTyper): boolean {
+        const val = typer.str(cursor)
+        typer.append(val)
+        return true
+    }
 }
 
-let ArraySerilizer = (root: TreeCursor, indenter: SpaceIndent, seq: string[], comma?: boolean): boolean => {
-    let c = clone(root)
-    if (!c.firstChild() && c.name !== '[') return false
+abstract class CollectionStreamer extends ItemStreamer {
+    leftBracket: string
+    rightBracket: string
+    constructor(brackets:string) {
+        super()
+        if (brackets.length != 2) {
+            throw "invalid brackets. brackets length must be 2"
+        }
+        this.leftBracket = brackets[0]
+        this.rightBracket = brackets[1] 
+    }
 
-    BaseSerilizer(c, indenter, seq)
-    indenter.stepIn()
-    let size = 0
-    while (c.nextSibling() && c.name !== ']' && ++size) {
-        const func = getTypeToSeqFun(c.name)
-        if (!func) {
-            console.log(`unknown node:"${c.name}" as pos:(${c.from}, ${c.to}`)
+    stream(cursor: TreeCursor, typer: DocTyper): boolean {
+        if (!cursor.next() || !this.isBegin(cursor)) {
             return false
         }
-        func(c, indenter, seq, true)
+        typer.append(this.leftBracket)
+        if (!this.iterStreamChildren(cursor, typer)) {
+            return false
+        }
+        typer.endl().append(this.rightBracket)
+        return true
     }
-    if (size > 0) {
-        let lastItem = seq[seq.length - 1]
-        seq[seq.length -1] = lastItem.slice(0, lastItem.length -1)
-    }
-    indenter.stepOut()
-    BaseSerilizer(c, indenter, seq, comma)
 
-    return true
+    private iterStreamChildren(cursor:TreeCursor, typer:DocTyper):boolean {
+        typer.childBegin()
+        let isFirstChild = true 
+        while (cursor.next() && !this.isEnd(cursor)) {
+            if (isFirstChild) {
+                isFirstChild = false
+            } else {
+                typer.append(',')
+            }
+            typer.endl()
+            if (!this.streamChild(cursor, typer)) {
+                return false
+            }
+        }
+        typer.childEnd() 
+        return true
+    }
+
+    private isBegin(cursor: TreeCursor):boolean {
+        return cursor.name === this.leftBracket
+     }
+
+    private isEnd(cursor: TreeCursor): boolean {
+        return cursor.name === this.rightBracket
+    }
+
+    abstract streamChild(cursor:TreeCursor, typer:DocTyper): boolean
 }
 
-let typeMap: Map<string, Serilizer> = new Map([
-    ["Array", ArraySerilizer],
-    ["Number", BaseSerilizer],
-    ["String", BaseSerilizer],
+
+class ArrayStreamer extends CollectionStreamer {
+    constructor() {
+        super('[]')
+    }
+
+    streamChild(cursor: TreeCursor, typer: DocTyper): boolean {
+        const streamer = getTypeStreamer(cursor.name)
+        if (!streamer) {
+            return false
+        }
+        return streamer.stream(cursor, typer)
+    }
+}
+
+class ObjectStreamer extends CollectionStreamer {
+    constructor() {
+        super('{}')
+    }
+
+    streamChild(cursor: TreeCursor, typer: DocTyper): boolean {
+        if (cursor.name !== 'Property') {
+            return false
+        }
+        cursor.next()
+
+        let streamer = getTypeStreamer('String')
+        if (!streamer) {
+            return false
+        }
+        streamer.stream(cursor, typer)
+        typer.append(' : ')
+        cursor.next()
+        streamer = getTypeStreamer(cursor.name)
+        if (!streamer) {
+            return false
+        }
+        return streamer.stream(cursor, typer)
+    }
+}
+
+const STREAM_MAP: Map<string, ItemStreamer> = new Map([
+    ["Number", new BaseStreamer()],
+    ["String", new BaseStreamer()],
+    ["Array", new ArrayStreamer()],
+    ["Object", new ObjectStreamer()],
 
 ])
 
-const getTypeToSeqFun = (nodeType: string) => {
-    return typeMap.get(nodeType)
+function getTypeStreamer(name: string):ItemStreamer | undefined {
+    const streamer = STREAM_MAP.get(name)
+    if (!streamer) {
+        console.log(`unknown syntrax node type: ${name}`)
+        return 
+    }
+    return streamer
 }
+
 
 class JsonFormater {
     root:TreeCursor
@@ -97,17 +210,18 @@ class JsonFormater {
             return null
         }
 
-        let func  = getTypeToSeqFun(c.name) 
-        if (func === undefined) {
+        let streamer = getTypeStreamer(c.name) 
+        if (streamer === undefined) {
             return null
         }
-        let seq: string[] = []
-        let indenter = new StyledIndent(this.state)
-        const ret = func(c, indenter, seq)
-        return seq.join('\n')
+        let typer = new StyledDocTyper(this.state.doc)
+
+        if (!streamer.stream(c, typer)) {
+            return null
+        }
+
+        return typer.flush()
     }
-
-
 }
 
 export {
