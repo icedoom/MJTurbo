@@ -5,7 +5,6 @@ import IconCodeFormat from "./icons/IconCodeFormat.vue";
 import { editorBridge } from "@/stores/editorBridge";
 import {mapActions } from 'pinia'
 
-
 export default defineComponent({
   components: { IconMJTurbo, IconCodeFormat },
   name: 'MenuBar',

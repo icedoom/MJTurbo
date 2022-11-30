@@ -161,13 +161,15 @@ class ObjectStreamer extends CollectionStreamer {
             return false
         }
         cursor.next()
-
+        // handle PropertyName . same as string
         let streamer = getTypeStreamer('String')
         if (!streamer) {
             return false
         }
         streamer.stream(cursor, typer)
-        typer.append(' : ')
+        typer.append(': ')
+
+        // handle PropertyValue
         cursor.next()
         streamer = getTypeStreamer(cursor.name)
         if (!streamer) {
