@@ -12,6 +12,9 @@ export const editorBridge = defineStore('editorBridge', {
         codeFormat() {
             console.log("code format call")
         },
+        zipCode() {
+            console.log("zip code call")
+        },
         toggleTextMode() {
             this.textMode = !this.textMode
         },

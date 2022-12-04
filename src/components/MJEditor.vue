@@ -50,7 +50,7 @@ class EditorHolder {
         return this.view ? this.view.state.doc : null
     }
 
-    codeFormat() {
+    private styleCode(fun: (formater:JsonFormater)=>string|null) {
         if (this.view === undefined) {
             return
         } 
@@ -68,13 +68,23 @@ class EditorHolder {
         }
 
         const formater = new JsonFormater(this.view.state)
-        const res = formater.toStyledString()
+        const res = fun(formater)
         if (!res) {
             return
         }
         console.log(res)
         this.view.dispatch({changes: {from: 0, to: this.view.state.doc.length, insert: res }})
+    }
 
+    codeFormat() {
+        this.styleCode((formater: JsonFormater) => {
+            return formater.toStyledString()
+        })
+    }
+    zipCode() { 
+        this.styleCode((formater: JsonFormater) => {
+            return formater.toZipString()
+        })
     }
 }
 
@@ -101,7 +111,8 @@ export default defineComponent({
         this.editorHolder.init(this.$refs['editor'])
 
         const envMap:EventMap = {
-            "codeFormat": this.codeFormat
+            "codeFormat": this.codeFormat,
+            'zipCode': this.zipCode
         }
 
         function eventDispatch(e: {name: string}) {
@@ -117,8 +128,10 @@ export default defineComponent({
     },
     methods: {
         codeFormat() {
-            console.log("now format")
-            this.editorHolder.codeFormat() 
+            this.editorHolder.codeFormat()
+        },
+        zipCode() {
+            this.editorHolder.zipCode()
         }
     },
 })

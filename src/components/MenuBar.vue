@@ -2,16 +2,17 @@
 import { defineComponent } from "vue";
 import IconMJTurbo from "./icons/IconMJTurbo.vue";
 import IconCodeFormat from "./icons/IconCodeFormat.vue";
+import IconZipCode from "./icons/IconZipCode.vue";
 import { editorBridge } from "@/stores/editorBridge";
 import {mapActions } from 'pinia'
 
 export default defineComponent({
-  components: { IconMJTurbo, IconCodeFormat },
+  components: { IconMJTurbo, IconCodeFormat , IconZipCode},
   name: 'MenuBar',
 
 
   methods: {
-    ...mapActions(editorBridge, ['codeFormat']),
+    ...mapActions(editorBridge, ['codeFormat', 'zipCode']),
   },
 })
 </script>
@@ -22,8 +23,11 @@ export default defineComponent({
             <img src="@/assets/MJTurbo.png">
         </div>
         <div class="mj-menu-group">
-            <button class="mj-menu-btn" @click="codeFormat">
+            <button class="mj-menu-btn" @click="codeFormat" title="code styled format">
                 <IconCodeFormat />
+            </button>
+            <button class="mj-menu-btn" @click="zipCode" title="code zip">
+                <IconZipCode />
             </button>
         </div>
     </div>

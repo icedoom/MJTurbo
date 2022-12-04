@@ -157,17 +157,23 @@ class ObjectStreamer extends CollectionStreamer {
     }
 
     streamChild(cursor: TreeCursor, typer: DocTyper): boolean {
+        // Property struct:
+        // Property
+        //  PropertyName (same as string)
+        //  <PropertyValue> (spec type of val .like Number )
         if (cursor.name !== 'Property') {
             return false
         }
+        // asume the struct is correct below
+
+        // handle PropertyName. same as string
         cursor.next()
-        // handle PropertyName . same as string
         let streamer = getTypeStreamer('String')
         if (!streamer) {
             return false
         }
         streamer.stream(cursor, typer)
-        typer.append(': ')
+        typer.append(':')
 
         // handle PropertyValue
         cursor.next()
@@ -177,11 +183,14 @@ class ObjectStreamer extends CollectionStreamer {
         }
         return streamer.stream(cursor, typer)
     }
+
 }
 
 const STREAM_MAP: Map<string, ItemStreamer> = new Map([
     ["Number", new BaseStreamer()],
     ["String", new BaseStreamer()],
+    ["True", new BaseStreamer()],
+    ["False", new BaseStreamer()],
     ["Array", new ArrayStreamer()],
     ["Object", new ObjectStreamer()],
 
@@ -205,7 +214,7 @@ class JsonFormater {
         this.root = syntaxTree(state).cursor()
     }
 
-    toStyledString() {
+    serializeCode(typer: DocTyper) {
         console.log("start to String")
         let c = clone(this.root)
         if (c.name !== 'JsonText' || !c.firstChild()) {
@@ -216,13 +225,19 @@ class JsonFormater {
         if (streamer === undefined) {
             return null
         }
-        let typer = new StyledDocTyper(this.state.doc)
 
         if (!streamer.stream(c, typer)) {
             return null
         }
 
-        return typer.flush()
+        return typer.flush() 
+    }
+    toStyledString() {
+        return this.serializeCode(new StyledDocTyper(this.state.doc))
+    }
+
+    toZipString() {
+        return this.serializeCode(new DocTyper(this.state.doc))
     }
 }
 
