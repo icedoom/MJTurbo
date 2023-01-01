@@ -37,15 +37,18 @@ export default defineComponent({
   height: 50px;
   width: 100%;
   background-color: #0084FF;
+  //background-color: gray;
   display: flex;
   align-items: center;
 
 
   .mj-menu-group {
-    margin-left: 8px;
+    margin-left: 12px;
     display: flex;
     align-items: center;
-    height: 100%;
+    height: 24px;
+    border-radius: 4px;
+    background-color: rgba(255,255,255, 0.1);
   }
 
   .mj-menu-btn {

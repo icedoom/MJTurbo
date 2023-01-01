@@ -1,8 +1,8 @@
 <script lang="ts">
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState } from "@codemirror/state"
-import { keymap } from "@codemirror/view"
-import {diagnosticCount, linter, lintGutter, nextDiagnostic, openLintPanel, type Diagnostic, type LintSource} from "@codemirror/lint"
+import { keymap, ViewPlugin, ViewUpdate} from "@codemirror/view"
+import {diagnosticCount, linter, lintGutter, nextDiagnostic, openLintPanel, type LintSource} from "@codemirror/lint"
 import {syntaxTree} from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
 import { json , jsonParseLinter} from "@codemirror/lang-json"
@@ -10,6 +10,15 @@ import { defineComponent } from "vue";
 import { editorBridge } from '@/stores/editorBridge'
 import { JsonFormater } from '@/utils/jsonUtil'
 
+const nodeUpdate = ViewPlugin.fromClass(class {
+    update(update: ViewUpdate) {
+        if (!update.docChanged) {
+            return
+        }
+        let c = syntaxTree(update.state).cursor()
+        console.log(c)
+    }
+})
 
 class EditorHolder {
     view?: EditorView;
@@ -32,7 +41,12 @@ class EditorHolder {
 
         let state = EditorState.create({
             doc: '{"a":12}\n',
-            extensions: [basicSetup, json(), linter(myLinter), lintGutter(), keymap.of(defaultKeymap), theme]
+            extensions: [basicSetup,
+                json(),
+                linter(myLinter),
+                lintGutter(),
+                keymap.of(defaultKeymap),
+                theme, nodeUpdate]
         })
 
         this.view = new EditorView({
@@ -92,8 +106,6 @@ type EventHandler = () => void
 interface EventMap {
     [key: string]: EventHandler|undefined
 }
-
-
 
 export default defineComponent({
     name: "MJEditor",
