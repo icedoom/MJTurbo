@@ -19,9 +19,6 @@ export default defineComponent({
 
 <template>
     <div class="menu-bar">
-        <div class="mj-logo">
-            <img src="@/assets/MJTurbo.png">
-        </div>
         <div class="mj-menu-group">
             <button class="mj-menu-btn" @click="codeFormat" title="code styled format">
                 <IconCodeFormat />
@@ -43,12 +40,6 @@ export default defineComponent({
   display: flex;
   align-items: center;
 
-  .mj-logo {
-    margin: 0 8px 0 8px;
-    img {
-      height: 50px;
-    }
-  }
 
   .mj-menu-group {
     margin-left: 8px;
