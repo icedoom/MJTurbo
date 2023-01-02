@@ -9,6 +9,7 @@ import { json , jsonParseLinter} from "@codemirror/lang-json"
 import { defineComponent } from "vue";
 import { editorBridge } from '@/stores/editorBridge'
 import { JsonFormater } from '@/utils/jsonUtil'
+import { parseTree } from '@/utils/jsonTree'
 
 const nodeUpdate = ViewPlugin.fromClass(class {
     update(update: ViewUpdate) {
@@ -16,7 +17,8 @@ const nodeUpdate = ViewPlugin.fromClass(class {
             return
         }
         let c = syntaxTree(update.state).cursor()
-        console.log(c)
+        let node = parseTree(c, update.state)
+        console.log(node)
     }
 })
 
