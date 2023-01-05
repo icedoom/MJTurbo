@@ -11,20 +11,12 @@ import { editorBridge } from '@/stores/editorBridge'
 import { JsonFormater } from '@/utils/jsonUtil'
 import { parseTree } from '@/utils/jsonTree'
 
-const nodeUpdate = ViewPlugin.fromClass(class {
-    update(update: ViewUpdate) {
-        if (!update.docChanged) {
-            return
-        }
-        let c = syntaxTree(update.state).cursor()
-        let node = parseTree(c, update.state)
-        console.log(node)
-    }
-})
+type DocUpdate = (stat: EditorState) => void
+const LOCAL_STORE_KEY = 'mj-data'
 
 class EditorHolder {
     view?: EditorView;
-    init = (ref: any) => {
+    init = (ref: any, docUpdate: DocUpdate) => {
         const jLinter = jsonParseLinter()
         const myLinter:LintSource = (view: EditorView) => {
             const ds = jLinter(view)
@@ -38,17 +30,35 @@ class EditorHolder {
             '.cm-lintPoint:after': {
                 border: '2px solid red',
                 position: 'inherit'
+            },
+            '&.cm-forcused': {
+                outline: 'none'
             }
         })
 
+        const nodeUpdate = ViewPlugin.fromClass(class {
+            update(update: ViewUpdate) {
+                if (!update.docChanged) {
+                    return
+                }
+                console.log(update)
+                docUpdate(update.state)
+            }
+        })
+
+        let data = localStorage.getItem(LOCAL_STORE_KEY)
+        data = data ? data : ''
+
         let state = EditorState.create({
-            doc: '{"a":12}\n',
-            extensions: [basicSetup,
+            doc: data,
+            extensions: [
+                basicSetup,
                 json(),
                 linter(myLinter),
                 lintGutter(),
                 keymap.of(defaultKeymap),
-                theme, nodeUpdate]
+                theme,
+                nodeUpdate]
         })
 
         this.view = new EditorView({
@@ -62,8 +72,14 @@ class EditorHolder {
         this.view = void (0)
     }
 
+    /*
     getDoc() {
-        return this.view ? this.view.state.doc : null
+        return this.view?.state.doc 
+    }
+    */
+
+    state() {
+        return this.view?.state
     }
 
     private styleCode(fun: (formater:JsonFormater)=>string|null) {
@@ -122,8 +138,8 @@ export default defineComponent({
         }
     },
     mounted() {
-        this.editorHolder.init(this.$refs['editor'])
-
+        this.editorHolder.init(this.$refs['editor'], this.docUpdate)
+        setTimeout(()=>this.docUpdate(this.editorHolder.state()), 0)
         const envMap:EventMap = {
             "codeFormat": this.codeFormat,
             'zipCode': this.zipCode
@@ -146,6 +162,19 @@ export default defineComponent({
         },
         zipCode() {
             this.editorHolder.zipCode()
+        },
+
+        docUpdate(stat?: EditorState) {
+            if (!stat) {
+                return
+            }
+            let c = syntaxTree(stat).cursor()
+            let node = parseTree(c, stat)
+            if (node) {
+                this.bridge.docUpdate(node)
+            }
+            console.log(node)
+            localStorage.setItem('mj-data', stat.doc.sliceString(0))
         }
     },
 })

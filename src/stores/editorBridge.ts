@@ -1,13 +1,10 @@
 import { defineStore } from 'pinia'
+import type { JsonNode }  from '@/utils/jsonTree'
 
 export const editorBridge = defineStore('editorBridge', {
     state: () => ({
-        textMode: true,
-        treeMode: true
+        nodeTree: null as JsonNode | null
     }),
-    getters: {
-        isAllModeOn: (state) => state.textMode && state.treeMode
-    },
     actions: {
         codeFormat() {
             console.log("code format call")
@@ -15,11 +12,10 @@ export const editorBridge = defineStore('editorBridge', {
         zipCode() {
             console.log("zip code call")
         },
-        toggleTextMode() {
-            this.textMode = !this.textMode
-        },
-        toggleTreeMode() {
-            this.treeMode = !this.treeMode
+        docUpdate(node: JsonNode) {
+            this.nodeTree = node
+            this.$patch({nodeTree: node})
+            console.log(this.nodeTree)
         },
     }
 })

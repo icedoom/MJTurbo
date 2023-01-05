@@ -2,15 +2,27 @@
 import { defineComponent } from 'vue';
 import SearchInput from '@/components/SearchInput.vue'
 import IconSearch from '@/components/icons/IconSearch.vue'
-
+import { editorBridge } from '@/stores/editorBridge'
+import NodeTree from '@/components/NodeTree.vue';
 export default defineComponent({
   name: "LeftPanel",
-  components: {SearchInput, IconSearch},
+  components: {SearchInput, IconSearch, NodeTree},
+  setup() {
+    const bridge = editorBridge()
+    return { bridge }
+  },
   data() {
     return {
       isMenuActive: true,
       isPinActive: false
 
+    }
+  },
+  computed: {
+    tree() {
+      let node = this.bridge.nodeTree
+      console.log(node)
+      return node ? [node]: []
     }
   },
   methods: {
@@ -25,7 +37,7 @@ export default defineComponent({
         this.isPinActive = true
         this.isMenuActive = false
       }
-    }
+    },
   }
 
 })
@@ -49,6 +61,7 @@ export default defineComponent({
           </template>
         </SearchInput>
         <div class="tree-panel">
+          <NodeTree :items="tree"/>
         </div>
       </div>
       <div class="pin-panel"></div>
