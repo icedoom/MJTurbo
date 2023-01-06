@@ -191,6 +191,7 @@ const STREAM_MAP: Map<string, ItemStreamer> = new Map([
     ["String", new BaseStreamer()],
     ["True", new BaseStreamer()],
     ["False", new BaseStreamer()],
+    ["Null", new BaseStreamer()],
     ["Array", new ArrayStreamer()],
     ["Object", new ObjectStreamer()],
 

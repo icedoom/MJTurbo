@@ -1,10 +1,25 @@
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, ref } from 'vue';
 import type {JsonNode , CollectionJsonNode } from '@/utils/jsonTree'
+import { editorBridge } from "@/stores/editorBridge";
+
 
 export default defineComponent({
   name: 'NodeTree',
   props: ['level', 'items'],
+  setup() {
+    const bridge = editorBridge()
+    let checkedPath = ref("")
+    return {
+      bridge,
+      checkedPath
+    }
+  },
+  data() {
+    return {
+      checked: ""
+    }
+  },
   computed: {
     levelClass() {
       let finalLevel = this.level ? this.level : 0
@@ -29,6 +44,14 @@ export default defineComponent({
         return `{${(node as CollectionJsonNode).children.length}}`
       }
       return ""
+    },
+
+    gotoNode(node: JsonNode) {
+      this.bridge.setCurrentSelectNode(node)
+      this.bridge.eventGotoNode(node)
+    },
+    isCurrentSelectNode(node: JsonNode) {
+      return this.bridge.isCurrentSelectNode(node)
     }
   }
 })
@@ -38,8 +61,8 @@ export default defineComponent({
 <template>
   <div class="tree-list">
     <template v-for="item in items">
-      <div class="tree-item-con">
-        <div class="tree-item">
+      <div class="tree-item-con" >
+        <div class="tree-item" :class="{active: isCurrentSelectNode(item)}" @click="gotoNode(item)">
           <span :class="levelClass"></span>
           <span :class="['item-type', itemTypeClass(item)]">{{ item.type }}
           <span v-if="isCollection(item)"  class="item-extra">{{ collectionLenth(item) }}</span>
@@ -69,6 +92,13 @@ export default defineComponent({
   cursor: pointer;
   filter: opacity(0.8);
 
+  &.active {
+    transition: all .3s;
+    filter: none;
+    color: #409EFF;
+    background-color: #F5F7FA;
+  }
+
   &:hover {
     transition: all .3s;
     filter: none;
@@ -79,6 +109,8 @@ export default defineComponent({
   .item-type {
     //height: 16px;
     border-radius: 2px;
+    min-width: 10px;
+    justify-content: center;
     display: flex;
     height: 1.2rem;
     font-size: 10px;
@@ -92,8 +124,11 @@ export default defineComponent({
       padding-left: 4px;
     }
 
-    &.item-type-N {
+    &.item-type-I {
       background-color: #9E1068;
+    }
+    &.item-type-N {
+      background-color: gray;
     }
 
     &.item-type-S {

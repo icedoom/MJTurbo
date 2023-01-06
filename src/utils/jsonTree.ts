@@ -174,10 +174,11 @@ class ObjectTypeIter extends CollectionTypeIter {
 }
 
 const STREAM_MAP: Map<string, NodeIter> = new Map([
-  ["Number", new BasicTypeIter('N')],
+  ["Number", new BasicTypeIter('I')],
   ["String", new BasicTypeIter('S')],
   ["True", new BasicTypeIter('B')],
   ["False", new BasicTypeIter('B')],
+  ['Null', new BasicTypeIter('N')],
   ["Array", new ArrayTypeIter()],
   ["Object", new ObjectTypeIter()]
 ])

@@ -1,17 +1,18 @@
 <script lang="ts">
 import { EditorView, basicSetup } from 'codemirror'
-import { EditorState } from "@codemirror/state"
+import { EditorSelection, EditorState } from "@codemirror/state"
 import { keymap, ViewPlugin, ViewUpdate} from "@codemirror/view"
 import {diagnosticCount, linter, lintGutter, nextDiagnostic, openLintPanel, type LintSource} from "@codemirror/lint"
 import {syntaxTree} from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
 import { json , jsonParseLinter} from "@codemirror/lang-json"
-import { defineComponent } from "vue";
+import { defineComponent, nextTick } from "vue";
 import { editorBridge } from '@/stores/editorBridge'
 import { JsonFormater } from '@/utils/jsonUtil'
-import { parseTree } from '@/utils/jsonTree'
+import { parseTree, type JsonNode } from '@/utils/jsonTree'
 
 type DocUpdate = (stat: EditorState) => void
+type BridgeEvent = {name:string, args:Array<any>}
 const LOCAL_STORE_KEY = 'mj-data'
 
 class EditorHolder {
@@ -72,14 +73,17 @@ class EditorHolder {
         this.view = void (0)
     }
 
-    /*
-    getDoc() {
-        return this.view?.state.doc 
-    }
-    */
-
     state() {
         return this.view?.state
+    }
+
+    selectNode(node: JsonNode) {
+        this.view?.dispatch({
+            selection: EditorSelection.create([
+            EditorSelection.range(node.from, node.to)
+
+            ])
+        })
     }
 
     private styleCode(fun: (formater:JsonFormater)=>string|null) {
@@ -120,7 +124,7 @@ class EditorHolder {
     }
 }
 
-type EventHandler = () => void
+type EventHandler = (e: BridgeEvent) => void
 interface EventMap {
     [key: string]: EventHandler|undefined
 }
@@ -139,16 +143,18 @@ export default defineComponent({
     },
     mounted() {
         this.editorHolder.init(this.$refs['editor'], this.docUpdate)
-        setTimeout(()=>this.docUpdate(this.editorHolder.state()), 0)
+        nextTick(()=>this.docUpdate(this.editorHolder.state()))
         const envMap:EventMap = {
             "codeFormat": this.codeFormat,
-            'zipCode': this.zipCode
+            'zipCode': this.zipCode,
+            'eventGotoNode': this.gotoNode
         }
 
-        function eventDispatch(e: {name: string}) {
+        function eventDispatch(e: BridgeEvent) {
+            console.log(e)
             const func = envMap[e.name]
             if (func) {
-                func()
+                func(e)
             }
         }
         this.bridge.$onAction(eventDispatch, true)
@@ -157,11 +163,18 @@ export default defineComponent({
         this.editorHolder.destroy()
     },
     methods: {
-        codeFormat() {
+        codeFormat(e: BridgeEvent) {
             this.editorHolder.codeFormat()
         },
-        zipCode() {
+        zipCode(e: BridgeEvent) {
             this.editorHolder.zipCode()
+        },
+        gotoNode(e: BridgeEvent) {
+            if (e.args.length !== 1) {
+                return
+            }
+            const node = (e.args[0] as JsonNode)
+            this.editorHolder.selectNode(node)
         },
 
         docUpdate(stat?: EditorState) {
