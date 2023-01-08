@@ -61,19 +61,23 @@ export default defineComponent({
 <template>
   <table class="tree-list" cellspacing="0">
     <template v-for="item in items">
-    <tr>
-      <td class="tree-item-con" >
-        <div class="tree-item" :class="{active: isCurrentSelectNode(item)}" @click="gotoNode(item)">
-          <span :class="levelClass"></span>
-          <span :class="['item-type', itemTypeClass(item)]">{{ item.type }}
-          <span v-if="isCollection(item)"  class="item-extra">{{ collectionLenth(item) }}</span>
-          
-          </span>
-          <span class="item-name" :tooltips="item.path.value">{{ item.name }}</span>
-        </div>
-        <NodeTree v-if="isCollection(item)" :items="item.children" :level="nextLevel"/>
-      </td>
-    </tr>
+      <tr>
+        <td class="tree-item-con">
+          <div class="tree-item" :class="{ active: isCurrentSelectNode(item) }" @click="gotoNode(item)">
+            <span :class="levelClass"></span>
+            <span :class="['item-type', itemTypeClass(item)]">{{ item.type }}
+              <span v-if="isCollection(item)" class="item-extra">{{ collectionLenth(item) }}</span>
+            </span>
+            <span class="item-name" :tooltip="item.path.value">{{ item.name }}</span>
+            <div class="item-mask">
+              <div class="content">
+              <div class="more-btn">...</div>
+              </div>
+            </div>
+          </div>
+          <NodeTree v-if="isCollection(item)" :items="item.children" :level="nextLevel" />
+        </td>
+      </tr>
     </template>
   </table>
 </template>
@@ -96,6 +100,9 @@ export default defineComponent({
   .level-1 { padding-left: 20px;}
   .level-2 { padding-left: 28px;}
   .level-3 { padding-left: 36px;}
+  .level-4 { padding-left: 44px;}
+  .level-5 { padding-left: 52px;}
+  .level-6 { padding-left: 60px;}
 }
 .tree-item {
   height: 2rem;
@@ -106,6 +113,7 @@ export default defineComponent({
   filter: opacity(0.5);
   padding-right: 12px;
   width: 100%;
+  position: relative;
 
   span {
     word-break: keep-all;
@@ -123,6 +131,33 @@ export default defineComponent({
     filter: none;
     color: #303133;
     background-color: #F5F7FA;
+  }
+
+  .item-mask {
+    display: none;
+  }
+
+  &:hover .item-mask {
+      display: block;
+      position: absolute;
+      height: 100%;
+      width: 100%;
+
+      .content {
+        height: 100%;
+        width: 200px;
+        background-image: linear-gradient(to right, rgba(27, 27, 27, 0) 50%, rgb(255, 255, 255) 75%);;
+        position: sticky;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: row-reverse;
+
+        .more-btn {
+          margin-right: 20px;
+          color: red
+        }
+      }
   }
 
   .item-type {

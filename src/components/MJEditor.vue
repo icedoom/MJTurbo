@@ -79,12 +79,19 @@ class EditorHolder {
     }
 
     selectNode(node: JsonNode) {
+        const from = node.type === 'S' ? node.from + 1 : node.from;
+        const to = node.type === 'S' ? node.to - 1 : node.to; 
+
         this.view?.dispatch({
             selection: EditorSelection.create([
-            EditorSelection.range(node.from, node.to)
-
-            ])
+                EditorSelection.range(from, to),
+            ]),
+            effects: EditorView.scrollIntoView(from, {
+                y: 'center'
+            }),
+            scrollIntoView: true
         })
+        this.view?.focus()
     }
 
     private styleCode(fun: (formater:JsonFormater)=>string|null) {
@@ -152,7 +159,6 @@ export default defineComponent({
         }
 
         function eventDispatch(e: BridgeEvent) {
-            console.log(e)
             const func = envMap[e.name]
             if (func) {
                 func(e)
@@ -187,15 +193,10 @@ export default defineComponent({
             if (node) {
                 this.bridge.docUpdate(node)
             }
-            console.log(node)
             localStorage.setItem('mj-data', stat.doc.sliceString(0))
         }
     },
 })
-
-
-
-
 
 </script>
 
