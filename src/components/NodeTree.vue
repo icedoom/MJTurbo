@@ -59,9 +59,10 @@ export default defineComponent({
 
 
 <template>
-  <div class="tree-list">
+  <table class="tree-list" cellspacing="0">
     <template v-for="item in items">
-      <div class="tree-item-con" >
+    <tr>
+      <td class="tree-item-con" >
         <div class="tree-item" :class="{active: isCurrentSelectNode(item)}" @click="gotoNode(item)">
           <span :class="levelClass"></span>
           <span :class="['item-type', itemTypeClass(item)]">{{ item.type }}
@@ -71,13 +72,25 @@ export default defineComponent({
           <span class="item-name" :tooltips="item.path.value">{{ item.name }}</span>
         </div>
         <NodeTree v-if="isCollection(item)" :items="item.children" :level="nextLevel"/>
-      </div>
+      </td>
+    </tr>
     </template>
-  </div>
+  </table>
 </template>
 
 
 <style lang="scss">
+.tree-list {
+  width: 100%;
+  padding: 0;
+  tr {
+    margin: 0;
+    padding: 0;
+  }
+  td {
+    padding: 0;
+  }
+}
 .tree-item {
   .level-0 { padding-left: 12px;}
   .level-1 { padding-left: 20px;}
@@ -90,10 +103,16 @@ export default defineComponent({
   align-items: center;
   color: #606266;
   cursor: pointer;
-  filter: opacity(0.8);
+  filter: opacity(0.5);
+  padding-right: 12px;
+  width: 100%;
 
-  &.active {
-    transition: all .3s;
+  span {
+    word-break: keep-all;
+  }
+
+  &.active, &.active:hover {
+    transition: all .2s;
     filter: none;
     color: #409EFF;
     background-color: #F5F7FA;

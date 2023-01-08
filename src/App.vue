@@ -20,12 +20,14 @@ import LeftPanel from './views/LeftPanel.vue';
 <style scoped lang="scss">
 .frame {
   flex-grow: 1;
+  height: 100vh;
   display: flex;
 
   .right-panel {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 }
 
@@ -33,6 +35,7 @@ import LeftPanel from './views/LeftPanel.vue';
   width: 100%;
   display: flex;
   flex-grow: 1;
+  overflow: auto;
 
   .meditor {
     width: 100%;

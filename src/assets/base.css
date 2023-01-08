@@ -93,8 +93,13 @@ body {
   --mj-select-group-border-active: 1px solid var(--mj-sellect-group-border-color-active);
 }
 
-body {
+html,body {
+  height: 100%;
   margin: 0;
+  padding: 0;
+}
+
+body {
   min-height: 100vh;
   display: flex;
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',

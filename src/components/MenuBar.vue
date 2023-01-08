@@ -35,6 +35,7 @@ export default defineComponent({
     
 .menu-bar {
   height: 50px;
+  min-height: 50px;
   width: 100%;
   background-color: #0084FF;
   //background-color: gray;

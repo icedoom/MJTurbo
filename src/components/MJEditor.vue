@@ -1,7 +1,7 @@
 <script lang="ts">
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorSelection, EditorState } from "@codemirror/state"
-import { keymap, ViewPlugin, ViewUpdate} from "@codemirror/view"
+import { gutters, keymap, ViewPlugin, ViewUpdate} from "@codemirror/view"
 import {diagnosticCount, linter, lintGutter, nextDiagnostic, openLintPanel, type LintSource} from "@codemirror/lint"
 import {syntaxTree} from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
@@ -54,6 +54,7 @@ class EditorHolder {
             doc: data,
             extensions: [
                 basicSetup,
+                gutters({fixed: true}),
                 json(),
                 linter(myLinter),
                 lintGutter(),

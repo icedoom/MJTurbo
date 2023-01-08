@@ -64,7 +64,7 @@ export default defineComponent({
           <NodeTree :items="tree"/>
         </div>
       </div>
-      <div class="pin-panel"></div>
+      <!--div class="pin-panel"></!--div-->
     </div>
   </div>
 </template>
@@ -117,11 +117,14 @@ export default defineComponent({
 .left-panel {
   width: 200px;
   display: flex;
+  height: 100vh;
   flex-direction: column;
+  align-items: stretch;
 
   .header {
     display: flex;
     height: 50px;
+    min-height: 50px;
     align-items: center;
     padding-left: 12px;
 
@@ -133,14 +136,33 @@ export default defineComponent({
   }
   .content {
     flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     
     .menu-panel {
       display: flex;
+      width: 100%;
       flex-direction: column;
+      align-items: stretch;
+      flex-grow: 1;
+      flex-shrink: 1;
+      overflow: hidden;
     
       .node-search {
         margin-left: 12px;
+        height: 40px;
+        min-height: 40px;
         margin-right: 12px;
+      }
+
+      .tree-panel {
+        flex-grow: 1;
+        flex-shrink: 1;
+        overflow: auto;
+        scroll-snap-align: start;
+        width: 100%;
       }
     }
   }
