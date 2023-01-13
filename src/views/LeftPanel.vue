@@ -160,9 +160,15 @@ export default defineComponent({
       .tree-panel {
         flex-grow: 1;
         flex-shrink: 1;
-        overflow: auto;
+        overflow: hidden;
         scroll-snap-align: start;
-        width: 100%;
+        width: calc(100% - 12px);
+        margin-left: 12px;
+
+        &:hover {
+          overflow: auto;
+          transition: overflow 0.3s;
+        }
       }
     }
   }

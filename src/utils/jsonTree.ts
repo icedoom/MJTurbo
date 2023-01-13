@@ -43,8 +43,6 @@ abstract class CollectionJsonNode extends JsonNode {
   addChild(node: JsonNode, path:JPath):boolean {
     node.parent = this
     node.path = path
-    console.log(this.path)
-    console.log(node.path)
     this.children.push(node)
     return true
   }

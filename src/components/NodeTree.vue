@@ -2,10 +2,13 @@
 import { defineComponent, ref } from 'vue';
 import type {JsonNode , CollectionJsonNode } from '@/utils/jsonTree'
 import { editorBridge } from "@/stores/editorBridge";
-
+import IconTriangleRight  from '@/components/icons/IconTriangleRight.vue'
+import IconTriangleDown  from '@/components/icons/IconTriangleDown.vue'
+import { NodeSet } from '@lezer/common';
 
 export default defineComponent({
   name: 'NodeTree',
+  components: {IconTriangleRight, IconTriangleDown},
   props: ['level', 'items'],
   setup() {
     const bridge = editorBridge()
@@ -17,7 +20,11 @@ export default defineComponent({
   },
   data() {
     return {
-      checked: ""
+      currentNode: {
+        path: "",
+        expand: false
+      },
+      realLevel : this.level ?? 0
     }
   },
   computed: {
@@ -26,7 +33,7 @@ export default defineComponent({
       return `level-${finalLevel}`
     },
     nextLevel() {
-      return this.level ? this.level + 1 : 1;
+      return this.realLevel + 1
     }
   },
   methods: {
@@ -46,12 +53,24 @@ export default defineComponent({
       return ""
     },
 
-    gotoNode(node: JsonNode) {
+    contentClick(node: JsonNode) {
       this.bridge.setCurrentSelectNode(node)
       this.bridge.eventGotoNode(node)
+
+      if (this.currentNode.path !== node.path.value) {
+        this.currentNode.path = node.path.value
+        this.currentNode.expand = true
+      } else {
+        this.currentNode.expand = !this.currentNode.expand
+      }
     },
+
     isCurrentSelectNode(node: JsonNode) {
       return this.bridge.isCurrentSelectNode(node)
+    },
+
+    isCurrentExpand(node: JsonNode) {
+      return this.currentNode.path === node.path.value && this.currentNode.expand
     }
   }
 })
@@ -59,150 +78,75 @@ export default defineComponent({
 
 
 <template>
-  <table class="tree-list" cellspacing="0">
-    <template v-for="item in items">
-      <tr>
-        <td class="tree-item-con">
-          <div class="tree-item" :class="{ active: isCurrentSelectNode(item) }" @click="gotoNode(item)">
-            <span :class="levelClass"></span>
-            <span :class="['item-type', itemTypeClass(item)]">{{ item.type }}
-              <span v-if="isCollection(item)" class="item-extra">{{ collectionLenth(item) }}</span>
-            </span>
-            <span class="item-name" :tooltip="item.path.value">{{ item.name }}</span>
-            <div class="item-mask">
-              <div class="content">
-              <div class="more-btn">...</div>
-              </div>
-            </div>
+  <template v-for="item in items">
+    <div class="tree-node" :level="realLevel">
+      <div class="node-content" :class="{ active: isCurrentSelectNode(item) }" @click="contentClick(item)">
+        <span v-for="n in realLevel" class="item-prefix"></span>
+
+        <template v-if="isCollection(item)">
+          <div class="node-icon">
+            <IconTriangleDown v-if="isCurrentExpand(item)" />
+            <IconTriangleRight v-else />
           </div>
-          <NodeTree v-if="isCollection(item)" :items="item.children" :level="nextLevel" />
-        </td>
-      </tr>
-    </template>
-  </table>
+        </template>
+
+
+        <span class="item-name" :tooltip="item.path.value">{{ item.name }}</span>
+      </div>
+      <div v-if="isCollection(item)"  class="node-children" :is-expand = "isCurrentExpand(item)">
+        <NodeTree  :items="item.children" :level="nextLevel" />
+      </div>
+    </div>
+  </template>
 </template>
 
 
-<style lang="scss">
-.tree-list {
-  width: 100%;
-  padding: 0;
-  tr {
-    margin: 0;
-    padding: 0;
+<style lang="scss" scoped>
+.tree-node {
+  .item-prefix {
+    width: 12px;
+    min-width: 12px;
+    height: 100%;
+    border-left: 1px solid #d0d1d3;
   }
-  td {
-    padding: 0;
+  .item-name {
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .node-icon {
+    margin-right: 4px;
   }
 }
-.tree-item {
-  .level-0 { padding-left: 12px;}
-  .level-1 { padding-left: 20px;}
-  .level-2 { padding-left: 28px;}
-  .level-3 { padding-left: 36px;}
-  .level-4 { padding-left: 44px;}
-  .level-5 { padding-left: 52px;}
-  .level-6 { padding-left: 60px;}
-}
-.tree-item {
-  height: 2rem;
-  display: flex;
-  align-items: center;
+
+.tree-node {
+  display: block;
   color: #606266;
   cursor: pointer;
-  filter: opacity(0.5);
-  padding-right: 12px;
   width: 100%;
-  position: relative;
+  white-space: nowrap;
 
-  span {
-    word-break: keep-all;
-  }
-
-  &.active, &.active:hover {
-    transition: all .2s;
-    filter: none;
-    color: #409EFF;
-    background-color: #F5F7FA;
-  }
-
-  &:hover {
-    transition: all .3s;
-    filter: none;
-    color: #303133;
-    background-color: #F5F7FA;
-  }
-
-  .item-mask {
-    display: none;
-  }
-
-  &:hover .item-mask {
-      display: block;
-      position: absolute;
-      height: 100%;
-      width: 100%;
-
-      .content {
-        height: 100%;
-        width: 200px;
-        background-image: linear-gradient(to right, rgba(27, 27, 27, 0) 50%, rgb(255, 255, 255) 75%);;
-        position: sticky;
-        top: 0;
-        left: 0;
-        display: flex;
-        flex-direction: row-reverse;
-
-        .more-btn {
-          margin-right: 20px;
-          color: red
-        }
-      }
-  }
-
-  .item-type {
-    //height: 16px;
-    border-radius: 2px;
-    min-width: 10px;
-    justify-content: center;
-    display: flex;
-    height: 1.2rem;
-    font-size: 10px;
-    margin-right: 4px;
-    color: white;
-    padding-left: 4px;
-    padding-right: 4px;
+  .node-content {
+    height: 2rem;
     align-items: center;
+    display: flex;
+    width: 100%;
 
-    .item-extra {
-      padding-left: 4px;
+    &.active {
+      background-color:  #d9ecff;
+      border: 1px solid #409EFF;
+      width: calc(100% - 2px);
     }
 
-    &.item-type-I {
-      background-color: #9E1068;
-    }
-    &.item-type-N {
-      background-color: gray;
-    }
+  }
 
-    &.item-type-S {
-      background-color: #389E0D;
-    }
+  .node-children {
+    width: 100%;
 
-    &.item-type-B {
-      background-color: #1677FF;
+    &[is-expand="false"] {
+      display: none;
     }
-
-    &.item-type-O {
-      background-color: #F5222D;
-    }
-
-    &.item-type-A {
-      background-color: #D4380D;
-    }
-
   }
 
 }
-
 </style>
