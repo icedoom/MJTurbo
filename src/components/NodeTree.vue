@@ -4,12 +4,11 @@ import type {JsonNode , CollectionJsonNode } from '@/utils/jsonTree'
 import { editorBridge } from "@/stores/editorBridge";
 import IconTriangleRight  from '@/components/icons/IconTriangleRight.vue'
 import IconTriangleDown  from '@/components/icons/IconTriangleDown.vue'
-import { NodeSet } from '@lezer/common';
 
 export default defineComponent({
   name: 'NodeTree',
   components: {IconTriangleRight, IconTriangleDown},
-  props: ['level', 'items'],
+  props: ['level', 'items', 'expand'],
   setup() {
     const bridge = editorBridge()
     let checkedPath = ref("")
@@ -39,9 +38,6 @@ export default defineComponent({
   methods: {
     isCollection(node: JsonNode) {
       return node.type === 'A' || node.type === 'O'
-    },
-    itemTypeClass(item: JsonNode) {
-      return 'item-type-' + item.type
     },
     collectionLenth(node: JsonNode) {
       if (node.type === 'A') {
@@ -78,7 +74,7 @@ export default defineComponent({
 
 
 <template>
-  <template v-for="item in items">
+  <template v-for="item in items" :key="item.path.value">
     <div class="tree-node" :level="realLevel">
       <div class="node-content" :class="{ active: isCurrentSelectNode(item) }" @click="contentClick(item)">
         <span v-for="n in realLevel" class="item-prefix"></span>
@@ -88,13 +84,27 @@ export default defineComponent({
             <IconTriangleDown v-if="isCurrentExpand(item)" />
             <IconTriangleRight v-else />
           </div>
+          <span class="children-length">{{ collectionLenth(item) }}</span>
         </template>
 
-
-        <span class="item-name" :tooltip="item.path.value">{{ item.name }}</span>
+        <!--el-tooltip effect="light" :show-after=400 :show-arrow=false>
+        <template #content>
+        <div class="tips-container">
+          <div class="tips-item">
+          <label>Path</label>
+          <span>{{ item.path.value }}</span>
+          </div>
+          <div class="tips-item">
+            <label>Name</label>
+            <span>{{ item.name }}</span>
+          </div>
+        </div>
+        </template>
+        </el-tooltip-->
+        <span class="item-name" :title="item.path.value">{{ item.name }}</span>
       </div>
-      <div v-if="isCollection(item)"  class="node-children" :is-expand = "isCurrentExpand(item)">
-        <NodeTree  :items="item.children" :level="nextLevel" />
+      <div v-if="isCollection(item)" class="node-children" :is-expand="isCurrentExpand(item)">
+        <NodeTree :items="item.children" :level="nextLevel" />
       </div>
     </div>
   </template>
@@ -117,6 +127,25 @@ export default defineComponent({
   .node-icon {
     margin-right: 4px;
   }
+
+  .children-length {
+    color:  #79bbff;
+    padding-right: 4px;
+  }
+}
+
+.tips-container {
+.tips-item {
+  label {
+    color: red;
+    margin-right: 4px;
+
+    &::after {
+      content: ':';
+    }
+    
+  }
+}
 }
 
 .tree-node {
@@ -132,10 +161,14 @@ export default defineComponent({
     display: flex;
     width: 100%;
 
-    &.active {
+    &.active,&.active:hover{
       background-color:  #d9ecff;
       border: 1px solid #409EFF;
       width: calc(100% - 2px);
+    }
+
+    &:hover {
+      background-color:   #e9e9eb;
     }
 
   }
