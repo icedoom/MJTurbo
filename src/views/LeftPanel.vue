@@ -4,9 +4,12 @@ import SearchInput from '@/components/SearchInput.vue'
 import IconSearch from '@/components/icons/IconSearch.vue'
 import { editorBridge } from '@/stores/editorBridge'
 import NodeTree from '@/components/NodeTree.vue';
+import SearchList from '@/components/SearchList.vue'
+import type { CollectionJsonNode, JsonNode } from '@/utils/jsonTree';
+import { isCollection } from '@/utils/jsonTree';
 export default defineComponent({
   name: "LeftPanel",
-  components: {SearchInput, IconSearch, NodeTree},
+  components: {SearchInput, IconSearch, NodeTree, SearchList},
   setup() {
     const bridge = editorBridge()
     return { bridge }
@@ -14,18 +17,63 @@ export default defineComponent({
   data() {
     return {
       isMenuActive: true,
-      isPinActive: false
-
+      isPinActive: false,
+      searchText: ""
     }
   },
   computed: {
     tree() {
       let node = this.bridge.nodeTree
-      console.log(node)
-      return node ? [node]: []
+      return node ? [node] : []
+    },
+    isSearching() {
+      return this.searchText.length > 0
+    },
+    filteredTreeList() {
+      let node = this.bridge.nodeTree
+      return node ? this.filterTree(node) : []
     }
   },
   methods: {
+    filterTree(node: JsonNode) {
+      if (this.searchText.length === 0) {
+        return [node]
+      }
+
+      return this.filterByWord(node)
+      /*
+      if (this.searchText.startsWith('$')) {
+        return this.filterByPath(node)
+      } else {
+        return this.filterByWord(node)
+      }
+      */
+    },
+    filterByPath(node: JsonNode) {
+
+    },
+    filterByWord(node: JsonNode): JsonNode[] {
+      if (isCollection(node)) {
+        return this.filterCollectionByWord(node as CollectionJsonNode)
+      }
+      return this.isMatch(node) ? [node] : []
+    },
+
+    filterCollectionByWord(node: CollectionJsonNode):JsonNode[]  {
+      let res:JsonNode[] = []
+      if (this.isMatch(node)) {
+        res.push(node)
+      }
+
+      return node.children.reduce((pre, cur, _index, _arr) => { 
+        const items = this.filterByWord(cur)
+        return items ? pre.concat(items) : pre
+      }, res)
+    },
+    isMatch(node: JsonNode) {
+      return node.name.search(this.searchText) >= 0
+    },
+
     toggleMenuActive() {
       if (!this.isMenuActive) {
         this.isMenuActive = true
@@ -55,13 +103,17 @@ export default defineComponent({
     </div>
     <div class="content">
       <div class="menu-panel">
-        <SearchInput class="node-search" placeholder="Search Node">
+        <SearchInput class="node-search" placeholder="Search Node" v-model="searchText" 
+        title="You can input string or regex rule to match node name">
           <template #prefix>
             <IconSearch/>
           </template>
         </SearchInput>
-        <div class="tree-panel">
+        <div v-if="!isSearching"  class="tree-panel">
           <NodeTree :items="tree"/>
+        </div>
+        <div v-else class="searching-panel">
+          <SearchList :items="filteredTreeList"/>
         </div>
       </div>
       <!--div class="pin-panel"></!--div-->
@@ -157,14 +209,14 @@ export default defineComponent({
         margin-right: 12px;
       }
 
-      .tree-panel {
+      .tree-panel , .searching-panel {
         flex-grow: 1;
         flex-shrink: 1;
         overflow: hidden;
         scroll-snap-align: start;
-        width: calc(100% - 12px);
-        margin-left: 12px;
-
+        width: calc(100% - 4px);
+        padding-left: 2px;
+        padding-right: 2px;
         &:hover {
           overflow: auto;
           transition: overflow 0.3s;

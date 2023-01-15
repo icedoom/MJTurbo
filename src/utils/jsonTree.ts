@@ -26,6 +26,10 @@ class JsonNode {
     this.to = to
   }
 
+  pathValue() {
+    return this.path.value
+  }
+
 }
 
 class BasicJsonNode extends JsonNode {
@@ -205,8 +209,13 @@ function parseTree(c: TreeCursor, state:EditorState): JsonNode | undefined {
 
  }
 
+function isCollection(node: JsonNode) {
+  return node instanceof CollectionJsonNode;
+ }
+
 export {
   parseTree,
+  isCollection,
   type JsonNode,
   type CollectionJsonNode
 }
