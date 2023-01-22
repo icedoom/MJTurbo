@@ -167,7 +167,7 @@ export default defineComponent({
 
 
 .left-panel {
-  width: 200px;
+  min-width: 200px;
   display: flex;
   height: 100vh;
   flex-direction: column;

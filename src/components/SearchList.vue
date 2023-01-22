@@ -44,7 +44,7 @@ export default defineComponent({
         <div class="node-path">{{ getPath(node) }}</div>
       </div>
       <div class="control">
-        <IconMore/>
+          <IconMore />
       </div>
     </div>
     </div>
@@ -57,7 +57,7 @@ export default defineComponent({
 
 .node-item {
   width: 100%;
-  min-height: 2rem;
+  height: 2rem;
   display: flex;
   cursor: pointer;
 
@@ -97,6 +97,7 @@ export default defineComponent({
   &.active {
     background-color: #d9ecff;
     border: 1px solid #409EFF;
+    height: calc(2rem - 2px);
 
     .node-path {
       display: block;
@@ -110,12 +111,13 @@ export default defineComponent({
   }
 
   .node-name {
+    font-size: 0.9rem;
     color: #606266;
   }
 
   .node-path {
     color: #79bbff;
-    font-size: 0.8rem;
+    font-size: 0.5rem;
     display: none;
   }
 

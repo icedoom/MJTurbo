@@ -1,67 +1,109 @@
 import type { EditorState, Text } from '@codemirror/state'
 import type { TreeCursor } from '@lezer/common'
 
+const SEED = 31 
+
+function hashCode(val: string, index:number): number {
+  let res = 0
+  if (!val) {
+    return res;
+  }
+  for (let i = 0; i < val.length; ++i) {
+    const c = val.charCodeAt(i)
+    res = (res * SEED + c) & Number.MAX_SAFE_INTEGER
+  }
+  res = (res * SEED + index) & Number.MAX_SAFE_INTEGER
+
+  return res
+}
+
+class DocContext {
+  private _path?: JPath 
+  constructor(public cursor: TreeCursor, private doc: Text) { }
+
+  get from():number { return this.cursor.from}
+  get to():number { return this.cursor.to}
+  get name(): string { return this.cursor.name }
+  get path(): JPath {
+    if (!this._path) {
+      this._path = new JPath()
+    }
+    return this._path
+  }
+
+  slice(from: number, to: number): string {
+    return this.doc.sliceString(from, to)
+  }
+
+  next():boolean {return this.cursor.next()}
+  swapPath(newPath: JPath): JPath {
+    const cur = this.path
+    this._path = newPath
+    return cur
+  }
+}
+const LAST_ARRAY_ITEM_RE = /\[\d+\]$/
+const LAST_OBJECT_ITEM_RE = /.([^.\[\]]+)$/
 class JPath {
-  value: string
+  readonly value: string = ""
   constructor(val = "$") {
     this.value = val
   }
-
-  child(name: string) {
-    return new JPath(this.value + name)
+  arrayChild(name: string): JPath {
+    return new JPath(`${this.value}${name}`)
   }
+
+  objectChild(name: string): JPath {
+    return new JPath(`${this.value}.${name}`)
+  }
+
 }
+
+type JsonType = "O" | "A" | "S" | "I" | "B" | "N"
+
 class JsonNode { 
   parent: JsonNode|null = null
   path: JPath = new JPath()
   name:string = ""
-  type:string = ""
-  from: number = 0
-  to: number = 0
+  id: number = 0
+  type: JsonType
+  from: number
+  to: number
 
-  constructor(type: string, from:number, to:number) {
+  constructor(type: JsonType, from: number, to: number) {
     this.name = type
     this.type = type
     this.from = from
     this.to = to
   }
 
-  pathValue() {
+  pathValue():string {
     return this.path.value
   }
 
 }
 
 class BasicJsonNode extends JsonNode {
-  constructor(type: string, from: number, to: number) {
+  constructor(type: JsonType, from: number, to: number) {
     super(type, from, to)
   }
 }
 
 abstract class CollectionJsonNode extends JsonNode {
   children:JsonNode[] = [] 
-  constructor(type: string, from: number, to: number) {
+  constructor(type: JsonType, from: number, to: number) {
     super(type, from, to)
   }
 
-  addChild(node: JsonNode, path:JPath):boolean {
-    node.parent = this
-    node.path = path
-    this.children.push(node)
+  addChild(child: JsonNode):boolean {
+    child.parent = this
+    this.children.push(child)
     return true
   }
-
-  abstract setChildPath(node: JsonNode): void
-
 }
 class ArrayJsonNode extends CollectionJsonNode {
   constructor(from: number, to: number) {
     super('A', from, to)
-  }
-
-  setChildPath(node: JsonNode): void {
-    node.path.value = `${this.path.value}[${this.children.length}]`
-
   }
 }
 
@@ -69,24 +111,20 @@ class ObjectJsonNode extends CollectionJsonNode {
   constructor(from: number, to: number) {
     super('O', from, to)
   }
-  setChildPath(node: JsonNode): void {
-    node.path.value = `${this.path.value}.${node.name}`
-
-  }
 }
 
 
 abstract class NodeIter {
-  type:string = ""
-  constructor(type: string) {
+  type:JsonType
+  constructor(type: JsonType) {
     this.type = type
   }
-  abstract iter(c: TreeCursor, doc: Text, path: JPath): JsonNode|undefined;
+  abstract iter(ctx: DocContext): JsonNode|undefined;
 }
 
 class BasicTypeIter extends NodeIter {
-  iter(c: TreeCursor, doc:Text, path: JPath): JsonNode|undefined {
-    return new BasicJsonNode(this.type, c.from, c.to)
+  iter(ctx: DocContext): JsonNode|undefined {
+    return new BasicJsonNode(this.type, ctx.from, ctx.to)
   }
 }
 
@@ -94,7 +132,7 @@ abstract class CollectionTypeIter extends NodeIter {
   leftBracket: string;
   rightBracket: string;
 
-  constructor(type: string, brackets: string) {
+  constructor(type: JsonType, brackets: string) {
     super(type);
     if (brackets.length != 2) {
       throw new Error("invalid brackets. brackets length must be 2");
@@ -103,75 +141,87 @@ abstract class CollectionTypeIter extends NodeIter {
     this.rightBracket = brackets[1];
   }
 
-  iter(c: TreeCursor, doc: Text, path: JPath): JsonNode|undefined {
-    let node = this.createNode(c)
-    if (!c.next() || !this.isBegin(c)) {
+  iter(ctx: DocContext): JsonNode|undefined {
+    let node = this.createNode(ctx.from, ctx.to)
+    if (!ctx.next() || !this.isBegin(ctx.name)) {
       return ;
     }
-    while (c.next() && !this.isEnd(c)) {
-      if (!this.iterChild(c, node, doc, path)) {
+    while (ctx.next() && !this.isEnd(ctx.name)) {
+      if (!this.addChild(node, ctx)) {
         return ;
       }
     }
     return node;
   }
 
-  isBegin(c: TreeCursor): boolean { return c.name === this.leftBracket; }
-  isEnd(c: TreeCursor): boolean { return c.name === this.rightBracket; }
+  addChild(parent:CollectionJsonNode, ctx: DocContext): boolean {
+    const childName = this.childName(parent, ctx)
+    let curPath = ctx.swapPath(this.childPath(childName, ctx))
 
-  abstract iterChild(c: TreeCursor, node: CollectionJsonNode, doc: Text, path: JPath): boolean 
-  abstract createNode(c:TreeCursor):CollectionJsonNode
+    try {
+      let it = getIter(ctx.name);
+      let child = it?.iter(ctx);
+      if (!child) {
+        return false;
+      }
+      child.name = childName
+      child.path = ctx.path
+      child.id = hashCode(child.path.value, parent.children.length)
+      return parent.addChild(child);
+    } catch (e) {
+      console.error(e);
+      throw e;
+    } finally {
+      ctx.swapPath(curPath);
+    }
+  }
+
+  private isBegin(val: string): boolean { return val === this.leftBracket; }
+  private isEnd(val: string): boolean { return val === this.rightBracket; }
+
+  abstract childName(parent: CollectionJsonNode, ctx: DocContext): string
+  abstract childPath(childName: string, ctx: DocContext): JPath;
+  abstract createNode(from: number, to: number):CollectionJsonNode
 }
 
 class ArrayTypeIter extends CollectionTypeIter {
   constructor() {
     super('A', '[]')
   }
-  iterChild(c: TreeCursor, parent: CollectionJsonNode, doc: Text, path: JPath): boolean {
-    let it = getIter(c.name)
-    const childName =`[${parent.children.length}]`
-    let subPath = path.child(childName)
-    let n = it?.iter(c, doc, subPath)
-    if (!n) {
-      return false
-    }
-    n.name = childName
-    return parent.addChild(n, subPath);
+
+  childName(parent:CollectionJsonNode, ctx: DocContext): string {
+    return `[${parent.children.length}]`
   }
 
-  createNode(c: TreeCursor): CollectionJsonNode {
-    return new ArrayJsonNode(c.from, c.to)
+  childPath(childName: string, ctx: DocContext): JPath {
+      return ctx.path.arrayChild(childName)
+  }
+
+  createNode(from:number, to:number): CollectionJsonNode {
+    return new ArrayJsonNode(from, to)
   }
 }
 class ObjectTypeIter extends CollectionTypeIter {
   constructor() {
     super('O', '{}')
   }
-  iterChild(c: TreeCursor, parent: CollectionJsonNode, doc: Text, path: JPath): boolean {
-    if (c.name !== "Property") {
-      return false;
-    }
-    // asume the struct is correct below
 
+  childName(_parent: CollectionJsonNode, ctx: DocContext): string {
     // handle PropertyName. same as string
-    c.next();
-    let name = doc.sliceString(c.from+1, c.to-1)
+    ctx.next();
+    let name = ctx.slice(ctx.from + 1, ctx.to - 1)
 
     // handle PropertyValue
-    c.next();
-    let it = getIter(c.name);
-    const childName =`.${name}`
-    let subPath = path.child(childName)
-    let node = it?.iter(c, doc, subPath)
-    if (!node) {
-      return false
-    }
-    node.name = name
-    return parent.addChild(node, subPath)
+    ctx.next();
+    return name
   }
 
-  createNode(c: TreeCursor): CollectionJsonNode {
-    return new ObjectJsonNode(c.from, c.to)
+  childPath(childName: string, ctx: DocContext): JPath {
+      return ctx.path.objectChild(childName)
+  }
+
+  createNode(from: number, to: number): CollectionJsonNode {
+    return new ObjectJsonNode(from, to)
   }
 }
 
@@ -199,9 +249,9 @@ function parseTree(c: TreeCursor, state:EditorState): JsonNode | undefined {
     console.log('invalid data')
     return
   }
+  let ctx = new DocContext(c, state.doc)
   let it = getIter(c.name)
-  let path = new JPath()
-  let root = it?.iter(c, state.doc, path)
+  let root = it?.iter(ctx)
   if (root) {
     root.name = '<root>'
   }

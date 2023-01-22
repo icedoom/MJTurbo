@@ -34,7 +34,8 @@ class EditorHolder {
             },
             '&.cm-forcused': {
                 outline: 'none'
-            }
+            },
+            ".cm-scroller": {overflow: "visible"}
         })
 
         const nodeUpdate = ViewPlugin.fromClass(class {

@@ -21,6 +21,7 @@ export default defineComponent({
     <input type="text" class="mj-input-inner" :placeholder="placeholder" 
       :value="modelValue"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement)?.value)"
+      @keydown.esc="clear"
     />
       <IconClear v-if="modelValue?.length > 0" class="icon-close" @click="clear"/>
   </div>

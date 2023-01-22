@@ -4,7 +4,10 @@ import type { JsonNode }  from '@/utils/jsonTree'
 export const editorBridge = defineStore('editorBridge', {
     state: () => ({
         nodeTree: null as JsonNode | null,
-        currentSelectNode: ""
+        current: {
+            path: "",
+            id: 0
+        }
     }),
     actions: {
         codeFormat() {
@@ -23,10 +26,11 @@ export const editorBridge = defineStore('editorBridge', {
             console.log(this.nodeTree)
         },
         isCurrentSelectNode(node: JsonNode) {
-            return this.currentSelectNode === node.path.value
+            return this.current.id === node.id && this.current.path === node.path.value
         },
         setCurrentSelectNode(node: JsonNode) {
-            this.currentSelectNode = node.path.value
+            this.current.id = node.id
+            this.current.path = node.path.value
         }
     }
 })

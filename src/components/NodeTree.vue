@@ -74,7 +74,7 @@ export default defineComponent({
 
 
 <template>
-  <template v-for="item in items" :key="item.path.value">
+  <template v-for="item in items" :key="item.id">
     <div class="tree-node" :level="realLevel">
       <div class="node-content" :class="{ active: isCurrentSelectNode(item) }" @click="contentClick(item)">
         <span v-for="n in realLevel" class="item-prefix"></span>
@@ -165,6 +165,7 @@ export default defineComponent({
       background-color:  #d9ecff;
       border: 1px solid #409EFF;
       width: calc(100% - 2px);
+      height: calc(2rem - 2px);
     }
 
     &:hover {
