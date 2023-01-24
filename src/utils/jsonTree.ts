@@ -76,11 +76,9 @@ class JsonNode {
     this.from = from
     this.to = to
   }
-
   pathValue():string {
     return this.path.value
   }
-
 }
 
 class BasicJsonNode extends JsonNode {
@@ -128,6 +126,7 @@ class BasicTypeIter extends NodeIter {
   }
 }
 
+type ChildInfo = [string, JPath]
 abstract class CollectionTypeIter extends NodeIter {
   leftBracket: string;
   rightBracket: string;
@@ -155,8 +154,8 @@ abstract class CollectionTypeIter extends NodeIter {
   }
 
   addChild(parent:CollectionJsonNode, ctx: DocContext): boolean {
-    const childName = this.childName(parent, ctx)
-    let curPath = ctx.swapPath(this.childPath(childName, ctx))
+    const [childName, childPath ] = this.childInfo(parent, ctx)
+    let curPath = ctx.swapPath(childPath)
 
     try {
       let it = getIter(ctx.name);
@@ -179,8 +178,7 @@ abstract class CollectionTypeIter extends NodeIter {
   private isBegin(val: string): boolean { return val === this.leftBracket; }
   private isEnd(val: string): boolean { return val === this.rightBracket; }
 
-  abstract childName(parent: CollectionJsonNode, ctx: DocContext): string
-  abstract childPath(childName: string, ctx: DocContext): JPath;
+  abstract childInfo(parent: CollectionJsonNode, ctx: DocContext): ChildInfo;
   abstract createNode(from: number, to: number):CollectionJsonNode
 }
 
@@ -189,12 +187,9 @@ class ArrayTypeIter extends CollectionTypeIter {
     super('A', '[]')
   }
 
-  childName(parent:CollectionJsonNode, ctx: DocContext): string {
-    return `[${parent.children.length}]`
-  }
-
-  childPath(childName: string, ctx: DocContext): JPath {
-      return ctx.path.arrayChild(childName)
+  childInfo(parent: CollectionJsonNode, ctx: DocContext): ChildInfo {
+    const childName = `[${parent.children.length}]`
+    return [childName, ctx.path.arrayChild(childName)]
   }
 
   createNode(from:number, to:number): CollectionJsonNode {
@@ -206,18 +201,14 @@ class ObjectTypeIter extends CollectionTypeIter {
     super('O', '{}')
   }
 
-  childName(_parent: CollectionJsonNode, ctx: DocContext): string {
+  childInfo(_parent: CollectionJsonNode, ctx: DocContext): ChildInfo {
     // handle PropertyName. same as string
     ctx.next();
-    let name = ctx.slice(ctx.from + 1, ctx.to - 1)
+    let name = ctx.slice(ctx.from + 1, ctx.to - 1);
 
     // handle PropertyValue
     ctx.next();
-    return name
-  }
-
-  childPath(childName: string, ctx: DocContext): JPath {
-      return ctx.path.objectChild(childName)
+    return [name, ctx.path.objectChild(name)];
   }
 
   createNode(from: number, to: number): CollectionJsonNode {
