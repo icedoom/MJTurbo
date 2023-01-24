@@ -1,25 +1,25 @@
 <script lang="ts">
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorSelection, EditorState } from "@codemirror/state"
-import { gutters, keymap, ViewPlugin, ViewUpdate} from "@codemirror/view"
-import {diagnosticCount, linter, lintGutter, nextDiagnostic, openLintPanel, type LintSource} from "@codemirror/lint"
-import {syntaxTree} from "@codemirror/language"
+import { gutters, keymap, ViewPlugin, ViewUpdate } from "@codemirror/view"
+import { diagnosticCount, linter, lintGutter, nextDiagnostic, openLintPanel, type LintSource } from "@codemirror/lint"
+import { syntaxTree } from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
-import { json , jsonParseLinter} from "@codemirror/lang-json"
+import { json, jsonParseLinter } from "@codemirror/lang-json"
 import { defineComponent, nextTick } from "vue";
 import { editorBridge } from '@/stores/editorBridge'
 import { JsonFormater } from '@/utils/jsonUtil'
 import { parseTree, type JsonNode } from '@/utils/jsonTree'
 
 type DocUpdate = (stat: EditorState) => void
-type BridgeEvent = {name:string, args:Array<any>}
+type BridgeEvent = { name: string, args: Array<any> }
 const LOCAL_STORE_KEY = 'mj-data'
 
 class EditorHolder {
     view?: EditorView;
     init = (ref: any, docUpdate: DocUpdate) => {
         const jLinter = jsonParseLinter()
-        const myLinter:LintSource = (view: EditorView) => {
+        const myLinter: LintSource = (view: EditorView) => {
             const ds = jLinter(view)
             for (const d of ds) {
                 console.log(d)
@@ -35,7 +35,7 @@ class EditorHolder {
             '&.cm-forcused': {
                 outline: 'none'
             },
-            ".cm-scroller": {overflow: "visible"}
+            ".cm-scroller": { overflow: "visible" }
         })
 
         const nodeUpdate = ViewPlugin.fromClass(class {
@@ -43,7 +43,6 @@ class EditorHolder {
                 if (!update.docChanged) {
                     return
                 }
-                console.log(update)
                 docUpdate(update.state)
             }
         })
@@ -54,11 +53,11 @@ class EditorHolder {
         let state = EditorState.create({
             doc: data,
             extensions: [
+                lintGutter(),
                 basicSetup,
-                gutters({fixed: true}),
+                gutters({ fixed: true }),
                 json(),
                 linter(myLinter),
-                lintGutter(),
                 keymap.of(defaultKeymap),
                 theme,
                 nodeUpdate]
@@ -81,7 +80,7 @@ class EditorHolder {
 
     selectNode(node: JsonNode) {
         const from = node.type === 'S' ? node.from + 1 : node.from;
-        const to = node.type === 'S' ? node.to - 1 : node.to; 
+        const to = node.type === 'S' ? node.to - 1 : node.to;
 
         this.view?.dispatch({
             selection: EditorSelection.create([
@@ -95,10 +94,10 @@ class EditorHolder {
         this.view?.focus()
     }
 
-    private styleCode(fun: (formater:JsonFormater)=>string|null) {
+    private styleCode(fun: (formater: JsonFormater) => string | null) {
         if (this.view === undefined) {
             return
-        } 
+        }
         const dCount = diagnosticCount(this.view.state)
         if (dCount > 0) {
             openLintPanel(this.view)
@@ -109,7 +108,7 @@ class EditorHolder {
 
         let c = syntaxTree(this.view.state).cursor()
         if (c.name !== 'JsonText') {
-            return 
+            return
         }
 
         const formater = new JsonFormater(this.view.state)
@@ -118,7 +117,7 @@ class EditorHolder {
             return
         }
         console.log(res)
-        this.view.dispatch({changes: {from: 0, to: this.view.state.doc.length, insert: res }})
+        this.view.dispatch({ changes: { from: 0, to: this.view.state.doc.length, insert: res } })
     }
 
     codeFormat() {
@@ -126,7 +125,7 @@ class EditorHolder {
             return formater.toStyledString()
         })
     }
-    zipCode() { 
+    zipCode() {
         this.styleCode((formater: JsonFormater) => {
             return formater.toZipString()
         })
@@ -135,7 +134,7 @@ class EditorHolder {
 
 type EventHandler = (e: BridgeEvent) => void
 interface EventMap {
-    [key: string]: EventHandler|undefined
+    [key: string]: EventHandler | undefined
 }
 
 export default defineComponent({
@@ -143,7 +142,7 @@ export default defineComponent({
     setup() {
 
         const bridge = editorBridge()
-        return {bridge}
+        return { bridge }
     },
     data() {
         return {
@@ -152,8 +151,8 @@ export default defineComponent({
     },
     mounted() {
         this.editorHolder.init(this.$refs['editor'], this.docUpdate)
-        nextTick(()=>this.docUpdate(this.editorHolder.state()))
-        const envMap:EventMap = {
+        nextTick(() => this.docUpdate(this.editorHolder.state()))
+        const envMap: EventMap = {
             "codeFormat": this.codeFormat,
             'zipCode': this.zipCode,
             'eventGotoNode': this.gotoNode
