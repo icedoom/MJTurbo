@@ -42,8 +42,6 @@ class DocContext {
     return cur
   }
 }
-const LAST_ARRAY_ITEM_RE = /\[\d+\]$/
-const LAST_OBJECT_ITEM_RE = /.([^.\[\]]+)$/
 class JPath {
   readonly value: string = ""
   constructor(val = "$") {
@@ -78,6 +76,9 @@ class JsonNode {
   }
   pathValue():string {
     return this.path.value
+  }
+  pathSign(): string {
+    return `${this.path.value}##${this.id}`
   }
 }
 

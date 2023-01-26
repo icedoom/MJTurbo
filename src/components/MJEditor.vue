@@ -1,7 +1,7 @@
 <script lang="ts">
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorSelection, EditorState } from "@codemirror/state"
-import { gutters, keymap, ViewPlugin, ViewUpdate } from "@codemirror/view"
+import { BlockInfo, gutters, keymap, lineNumbers, ViewPlugin, ViewUpdate } from "@codemirror/view"
 import { diagnosticCount, linter, lintGutter, nextDiagnostic, openLintPanel, type LintSource } from "@codemirror/lint"
 import { syntaxTree } from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
@@ -55,6 +55,16 @@ class EditorHolder {
             extensions: [
                 lintGutter(),
                 basicSetup,
+                lineNumbers({
+                    domEventHandlers: {
+                        mouseenter: (view: EditorView, line: BlockInfo, event: Event):boolean => {
+                            console.log('hhhhhhhhh')
+                            console.log(line)
+                            console.log(event)
+                            return true
+                        }
+                    }
+                }),
                 gutters({ fixed: true }),
                 json(),
                 linter(myLinter),

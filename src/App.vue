@@ -2,6 +2,8 @@
 import MJEditor from './components/MJEditor.vue';
 import MenuBar from './components/MenuBar.vue';
 import LeftPanel from './views/LeftPanel.vue';
+
+
 </script>
 
 <template>
@@ -12,7 +14,6 @@ import LeftPanel from './views/LeftPanel.vue';
       <div class="editor-con">
         <MJEditor class="meditor" />
       </div>
-  
     </div>
   </div>
 </template>
@@ -22,6 +23,7 @@ import LeftPanel from './views/LeftPanel.vue';
   flex-grow: 1;
   height: 100vh;
   display: flex;
+  position: relative;
 
   .right-panel {
     flex-grow: 1;

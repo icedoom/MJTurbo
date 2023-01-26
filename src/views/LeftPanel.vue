@@ -34,23 +34,42 @@ export default defineComponent({
       return node ? this.filterTree(node) : []
     }
   },
+
+  mounted() {
+    this.initNodeTreeState()
+  },
   methods: {
+    initNodeTreeState() {
+      if (this.isSearching || this.bridge.hasNodeSellected) {
+        return
+      }
+      const node = this.bridge.nodeTree
+      if (!node) {
+        return
+      }
+      this.navToFirstBasicNode(node)
+    },
+    navToFirstBasicNode(node: JsonNode):boolean { 
+      if (!isCollection(node)) {
+        this.bridge.navToNode(node)
+        return true
+      } else {
+        const collectionNode = (node as CollectionJsonNode)
+        for (const child of collectionNode.children) {
+          if (this.navToFirstBasicNode(child)) {
+            console.log(child)
+            return true
+          }
+        }
+        return false
+      }
+    },
     filterTree(node: JsonNode) {
       if (this.searchText.length === 0) {
         return [node]
       }
 
       return this.filterByWord(node)
-      /*
-      if (this.searchText.startsWith('$')) {
-        return this.filterByPath(node)
-      } else {
-        return this.filterByWord(node)
-      }
-      */
-    },
-    filterByPath(node: JsonNode) {
-
     },
     filterByWord(node: JsonNode): JsonNode[] {
       if (isCollection(node)) {
@@ -86,8 +105,10 @@ export default defineComponent({
         this.isMenuActive = false
       }
     },
+    dragStart(e:any) {
+      console.log(e)
+    }
   }
-
 })
 </script>
 <template>
@@ -119,9 +140,24 @@ export default defineComponent({
       <!--div class="pin-panel"></!--div-->
     </div>
   </div>
+    <div class="drag-bar" @mousedown.prevent="dragStart($event)"></div>
 </template>
 
 <style scoped lang="scss">
+.drag-bar {
+    min-width:4px;
+    height: 100%;
+    background-color: none;
+    left: 204px;
+    cursor: ew-resize;
+    position: absolute;
+    z-index: 9999;
+
+    &:hover {
+      background-color:  #79bbff;
+      transition: all 2s;
+    }
+  }
 .panel-select {
   flex-grow: 1;
   display: flex;
@@ -186,13 +222,14 @@ export default defineComponent({
       }
     }
   }
+
   .content {
     flex-grow: 1;
     flex-shrink: 1;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    
+
     .menu-panel {
       display: flex;
       width: 100%;
@@ -201,7 +238,7 @@ export default defineComponent({
       flex-grow: 1;
       flex-shrink: 1;
       overflow: hidden;
-    
+
       .node-search {
         margin-left: 12px;
         height: 40px;
@@ -209,7 +246,8 @@ export default defineComponent({
         margin-right: 12px;
       }
 
-      .tree-panel , .searching-panel {
+      .tree-panel,
+      .searching-panel {
         flex-grow: 1;
         flex-shrink: 1;
         overflow: hidden;
@@ -217,9 +255,20 @@ export default defineComponent({
         width: calc(100% - 4px);
         padding-left: 2px;
         padding-right: 2px;
+
         &:hover {
-          overflow: auto;
-          transition: overflow 0.3s;
+          overflow: overlay;
+        }
+      }
+
+      .tree-panel {
+        &::-webkit-scrollbar {
+          width: 6px;
+          height: 1px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background:  rgba(200, 201, 204, .5);
         }
       }
     }

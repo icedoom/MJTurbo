@@ -1,13 +1,14 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
-import type {JsonNode , CollectionJsonNode } from '@/utils/jsonTree'
+import {type JsonNode , type CollectionJsonNode, isCollection } from '@/utils/jsonTree'
 import { editorBridge } from "@/stores/editorBridge";
 import IconTriangleRight  from '@/components/icons/IconTriangleRight.vue'
 import IconTriangleDown  from '@/components/icons/IconTriangleDown.vue'
+import IconPinNormal from '@/components/icons/IconPinNormal.vue'
 
 export default defineComponent({
   name: 'NodeTree',
-  components: {IconTriangleRight, IconTriangleDown},
+  components: {IconTriangleRight, IconTriangleDown, IconPinNormal},
   props: ['level', 'items', 'expand'],
   setup() {
     const bridge = editorBridge()
@@ -37,7 +38,10 @@ export default defineComponent({
   },
   methods: {
     isCollection(node: JsonNode) {
-      return node.type === 'A' || node.type === 'O'
+      return isCollection(node)
+    },
+    isPined(node: JsonNode) {
+      return this.bridge.isPined(node)
     },
     collectionLenth(node: JsonNode) {
       if (node.type === 'A') {
@@ -50,8 +54,7 @@ export default defineComponent({
     },
 
     contentClick(node: JsonNode) {
-      this.bridge.setCurrentSelectNode(node)
-      this.bridge.eventGotoNode(node)
+      this.bridge.navToNode(node)
 
       if (this.currentNode.path !== node.path.value) {
         this.currentNode.path = node.path.value
@@ -60,7 +63,9 @@ export default defineComponent({
         this.currentNode.expand = !this.currentNode.expand
       }
     },
-
+    pinClick(node: JsonNode) {
+      this.bridge.togglePin(node)
+    },
     isCurrentSelectNode(node: JsonNode) {
       return this.bridge.isCurrentSelectNode(node)
     },
@@ -87,21 +92,10 @@ export default defineComponent({
           <span class="children-length">{{ collectionLenth(item) }}</span>
         </template>
 
-        <!--el-tooltip effect="light" :show-after=400 :show-arrow=false>
-        <template #content>
-        <div class="tips-container">
-          <div class="tips-item">
-          <label>Path</label>
-          <span>{{ item.path.value }}</span>
-          </div>
-          <div class="tips-item">
-            <label>Name</label>
-            <span>{{ item.name }}</span>
-          </div>
-        </div>
-        </template>
-        </el-tooltip-->
         <span class="item-name" :title="item.path.value">{{ item.name }}</span>
+        <span class="item-opt" :class="{pined: isPined(item)}" @click.stop="pinClick(item)" title="Pin node">
+          <IconPinNormal/>
+        </span>
       </div>
       <div v-if="isCollection(item)" class="node-children" :is-expand="isCurrentExpand(item)">
         <NodeTree :items="item.children" :level="nextLevel" />
@@ -122,6 +116,15 @@ export default defineComponent({
   .item-name {
     text-overflow: ellipsis;
     overflow: hidden;
+    flex-grow: 1;
+  }
+  .item-opt {
+    min-width: 18px;
+    height: 100%;
+    display: none;
+    align-items: center;
+    margin-right: 4px;
+    color:  #b1b3b8;
   }
 
   .node-icon {
@@ -130,22 +133,8 @@ export default defineComponent({
 
   .children-length {
     color:  #79bbff;
-    padding-right: 4px;
+    margin-right: 8px;
   }
-}
-
-.tips-container {
-.tips-item {
-  label {
-    color: red;
-    margin-right: 4px;
-
-    &::after {
-      content: ':';
-    }
-    
-  }
-}
 }
 
 .tree-node {
@@ -168,8 +157,17 @@ export default defineComponent({
       height: calc(2rem - 2px);
     }
 
+    .item-opt.pined {
+      display: flex;
+      color: #409EFF;
+    }
+    
     &:hover {
       background-color:   #e9e9eb;
+      
+      .item-opt {
+        display: flex;
+      }
     }
 
   }
