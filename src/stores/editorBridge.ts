@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { JsonNode }  from '@/utils/jsonTree'
+import { isCollection, type CollectionJsonNode, type JsonNode }  from '@/utils/jsonTree'
 type PinNodeMap = Map<string, JsonNode>;
 
 export const editorBridge = defineStore('editorBridge', {
@@ -41,6 +41,11 @@ export const editorBridge = defineStore('editorBridge', {
         },
         docUpdate(node: JsonNode) {
             this.nodeTree = node
+
+            if (this.current.path.length === 0) {
+                this._initSelectNode(node)
+            }
+
             this.$patch({nodeTree: node})
         },
         isCurrentSelectNode(node: JsonNode) {
@@ -53,6 +58,21 @@ export const editorBridge = defineStore('editorBridge', {
         navToNode(node: JsonNode) {
             this.setCurrentSelectNode(node)
             this.eventGotoNode(node)
+        },
+        _initSelectNode(node: JsonNode):boolean {
+            if (!isCollection(node)) {
+                this.navToNode(node)
+                return true
+              } else {
+                const collectionNode = (node as CollectionJsonNode)
+                for (const child of collectionNode.children) {
+                  if (this._initSelectNode(child)) {
+                    console.log(child)
+                    return true
+                  }
+                }
+                return false
+              }
         }
     }
 })

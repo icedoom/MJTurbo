@@ -12,10 +12,8 @@ export default defineComponent({
   props: ['level', 'items', 'expand'],
   setup() {
     const bridge = editorBridge()
-    let checkedPath = ref("")
     return {
-      bridge,
-      checkedPath
+      bridge
     }
   },
   data() {
@@ -71,6 +69,10 @@ export default defineComponent({
     },
 
     isCurrentExpand(node: JsonNode) {
+      const curSelectedPath = this.bridge.current.path
+      if (this.currentNode.path.length === 0 &&  curSelectedPath.startsWith(node.path.value)) {
+        return true
+      }
       return this.currentNode.path === node.path.value && this.currentNode.expand
     }
   }

@@ -24,6 +24,7 @@ export default defineComponent({
   computed: {
     tree() {
       let node = this.bridge.nodeTree
+      console.log(node)
       return node ? [node] : []
     },
     isSearching() {
@@ -35,35 +36,7 @@ export default defineComponent({
     }
   },
 
-  mounted() {
-    this.initNodeTreeState()
-  },
   methods: {
-    initNodeTreeState() {
-      if (this.isSearching || this.bridge.hasNodeSellected) {
-        return
-      }
-      const node = this.bridge.nodeTree
-      if (!node) {
-        return
-      }
-      this.navToFirstBasicNode(node)
-    },
-    navToFirstBasicNode(node: JsonNode):boolean { 
-      if (!isCollection(node)) {
-        this.bridge.navToNode(node)
-        return true
-      } else {
-        const collectionNode = (node as CollectionJsonNode)
-        for (const child of collectionNode.children) {
-          if (this.navToFirstBasicNode(child)) {
-            console.log(child)
-            return true
-          }
-        }
-        return false
-      }
-    },
     filterTree(node: JsonNode) {
       if (this.searchText.length === 0) {
         return [node]
