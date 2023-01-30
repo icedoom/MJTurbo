@@ -1,6 +1,19 @@
 import type { EditorState, Text } from '@codemirror/state'
 import type { TreeCursor } from '@lezer/common'
 
+
+/** 
+ * Json node type enum
+*/
+enum JsonType {
+  OBJECT = "O",
+  ARRAY = "A",
+  STRING = "S",
+  NUMBER = "I",
+  BOOLEAN = "B",
+  NULL = "N"
+}
+
 const SEED = 31 
 
 function hashCode(val: string, index:number): number {
@@ -57,8 +70,6 @@ class JPath {
 
 }
 
-type JsonType = "O" | "A" | "S" | "I" | "B" | "N"
-
 class JsonNode { 
   parent: JsonNode|null = null
   path: JPath = new JPath()
@@ -102,13 +113,13 @@ abstract class CollectionJsonNode extends JsonNode {
 }
 class ArrayJsonNode extends CollectionJsonNode {
   constructor(from: number, to: number) {
-    super('A', from, to)
+    super(JsonType.ARRAY, from, to)
   }
 }
 
 class ObjectJsonNode extends CollectionJsonNode {
   constructor(from: number, to: number) {
-    super('O', from, to)
+    super(JsonType.OBJECT, from, to)
   }
 }
 
@@ -185,7 +196,7 @@ abstract class CollectionTypeIter extends NodeIter {
 
 class ArrayTypeIter extends CollectionTypeIter {
   constructor() {
-    super('A', '[]')
+    super(JsonType.ARRAY, '[]')
   }
 
   childInfo(parent: CollectionJsonNode, ctx: DocContext): ChildInfo {
@@ -199,7 +210,7 @@ class ArrayTypeIter extends CollectionTypeIter {
 }
 class ObjectTypeIter extends CollectionTypeIter {
   constructor() {
-    super('O', '{}')
+    super(JsonType.OBJECT, '{}')
   }
 
   childInfo(_parent: CollectionJsonNode, ctx: DocContext): ChildInfo {
@@ -218,11 +229,11 @@ class ObjectTypeIter extends CollectionTypeIter {
 }
 
 const STREAM_MAP: Map<string, NodeIter> = new Map([
-  ["Number", new BasicTypeIter('I')],
-  ["String", new BasicTypeIter('S')],
-  ["True", new BasicTypeIter('B')],
-  ["False", new BasicTypeIter('B')],
-  ['Null', new BasicTypeIter('N')],
+  ["Number", new BasicTypeIter(JsonType.NUMBER)],
+  ["String", new BasicTypeIter(JsonType.STRING)],
+  ["True", new BasicTypeIter(JsonType.BOOLEAN)],
+  ["False", new BasicTypeIter(JsonType.BOOLEAN)],
+  ['Null', new BasicTypeIter(JsonType.NULL)],
   ["Array", new ArrayTypeIter()],
   ["Object", new ObjectTypeIter()]
 ])
@@ -259,5 +270,6 @@ export {
   parseTree,
   isCollection,
   type JsonNode,
-  type CollectionJsonNode
+  type CollectionJsonNode,
+  JsonType
 }

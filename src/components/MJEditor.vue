@@ -55,16 +55,7 @@ class EditorHolder {
             extensions: [
                 lintGutter(),
                 basicSetup,
-                lineNumbers({
-                    domEventHandlers: {
-                        mouseenter: (view: EditorView, line: BlockInfo, event: Event):boolean => {
-                            console.log('hhhhhhhhh')
-                            console.log(line)
-                            console.log(event)
-                            return true
-                        }
-                    }
-                }),
+                lineNumbers(),
                 gutters({ fixed: true }),
                 json(),
                 linter(myLinter),
